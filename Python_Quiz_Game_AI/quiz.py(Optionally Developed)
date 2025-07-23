@@ -1,0 +1,330 @@
+import streamlit as st
+import pandas as pd
+import os
+import json
+import re
+import random
+from dotenv import load_dotenv
+from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+# Load environment variables
+load_dotenv()
+groq_api_key = os.getenv("GROQ_API_KEY")
+
+# Helper functions
+def clean_answer(answer):
+    match = re.search(r'[A-DTtFf]', str(answer).upper())
+    return {'T': 'A', 'F': 'B'}.get(match.group(0), match.group(0) if match else "X")
+
+# Session state initialization
+default_state = {
+    'score': 0, 'qn': 0, 'results': [], 'total_questions': 5, 'answered': False,
+    'question_cache': set(), 'used_questions': [], 'quiz_started': False, 
+    'user_name': "", 'uploaded_df': None, 'show_explanations': False,
+    'show_leaderboard': False, 'save_to_leaderboard': False, 'leaderboard': [],
+    'difficulty_mapping': {
+        'easy': 'Beginner', 'medium': 'Intermediate', 'hard': 'Advanced',
+        'beginner': 'Beginner', 'intermediate': 'Intermediate', 'advanced': 'Advanced'
+    }
+}
+for key, value in default_state.items():
+    st.session_state.setdefault(key, value)
+
+# LLM setup
+llm = ChatGroq(model="gemma2-9b-it", temperature=0.9, api_key=groq_api_key)
+
+prompt_template = ChatPromptTemplate.from_template("""
+Generate a {difficulty} level multiple-choice question on "{topic}":
+Question: [Question text]
+Options:
+A. [Option A] B. [Option B] C. [Option C] D. [Option D]
+Answer: [A-D] Explanation: [Brief explanation]""")
+
+explanation_prompt = ChatPromptTemplate.from_template("""
+Explain: Question: {question} Correct Answer: {correct_answer} Explanation:""")
+
+# UI Components
+st.title("AI Quiz Game")
+
+# Quiz setup
+if not st.session_state.quiz_started:
+    st.session_state.user_name = st.text_input("Name:", value=st.session_state.user_name)
+    if not st.session_state.user_name.strip(): 
+        st.stop()
+
+quiz_mode = st.radio("Quiz Mode:", ["LLM Generated Quiz", "Upload CSV File"])
+if quiz_mode == "Upload CSV File":
+    st.session_state.uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
+
+with st.form("quiz_setup"):
+    if quiz_mode == "LLM Generated Quiz":
+        col1, col2 = st.columns(2)
+        with col1: 
+            difficulty = st.selectbox("Difficulty", ["Beginner", "Intermediate", "Advanced"])
+        with col2: 
+            topic = st.text_input("Topic:", value="General Knowledge")
+        num_questions = st.slider("Questions:", 1, 25, 5)
+        st.session_state.quiz_mode = "llm"
+    else:
+        topic = "Uploaded Questions"
+        difficulty = "From CSV"
+        num_questions = st.slider("Questions:", 1, 50, 10)
+        st.session_state.quiz_mode = "csv"
+    
+    if st.form_submit_button("Start Quiz"):
+        if st.session_state.quiz_mode == "csv" and not st.session_state.get("uploaded_file"):
+            st.warning("Upload CSV file")
+            st.stop()
+        if st.session_state.quiz_mode == "llm" and not topic.strip():
+            st.warning("Enter quiz topic")
+            st.stop()
+        
+        st.session_state.update({
+            'difficulty': difficulty,
+            'topic': topic,
+            'total_questions': num_questions,
+            'save_to_leaderboard': False
+        })
+        
+        if st.session_state.quiz_mode == "csv":
+            try:
+                df = pd.read_csv(st.session_state.uploaded_file)
+                df.columns = df.columns.str.strip().str.lower()
+                
+                # Column mapping
+                cols = {
+                    'question': ['question', 'text', 'prompt'],
+                    'answer': ['answer', 'correct'],
+                    'a': ['a', 'optiona', 'true'],
+                    'b': ['b', 'optionb', 'false'],
+                    'explanation': ['explanation'],
+                    'difficulty': ['difficulty']
+                }
+                
+                for col_name, aliases in cols.items():
+                    for alias in aliases:
+                        if alias in df.columns:
+                            df = df.rename(columns={alias: col_name})
+                            break
+                
+                df['difficulty'] = df['difficulty'].map(
+                    lambda x: st.session_state.difficulty_mapping.get(str(x).lower(), "Intermediate")
+                ) if 'difficulty' in df.columns else "Not Specified"
+                
+                df['question'] = df.get('question', df.iloc[:, 0])
+                df['answer'] = df['answer'].apply(clean_answer)
+                
+                # Boolean detection
+                df['is_boolean'] = df.apply(lambda row: (
+                    ('true' in str(row.get('a', '')).lower() and 
+                    'false' in str(row.get('b', '')).lower()
+                )) or (
+                    'false' in str(row.get('a', '')).lower() and 
+                    'true' in str(row.get('b', '')).lower()
+                ), axis=1)
+                
+                # Filter questions
+                new_qs = [q for q in df['question'] if q not in st.session_state.used_questions]
+                st.session_state.uploaded_df = df[df['question'].isin(
+                    new_qs if len(new_qs) >= num_questions else random.sample(new_qs, num_questions)
+                )].sample(frac=1)
+                st.session_state.total_questions = len(st.session_state.uploaded_df)
+                st.session_state.used_questions.extend(st.session_state.uploaded_df['question'].tolist())
+            except Exception as e:
+                st.error(f"CSV Error: {str(e)}")
+                st.stop()
+        else:
+            st.session_state.uploaded_df = None
+        
+        st.session_state.quiz_started = True
+        st.rerun()
+
+if not st.session_state.quiz_started:
+    st.stop()
+
+def generate_explanation(q, ans):
+    return (explanation_prompt | llm | StrOutputParser()).invoke({'question': q, 'correct_answer': ans})
+
+def parse_question(text):
+    try:
+        q = re.search(r'Question:\s*(.+?)(?:\nOptions:|$)', text, re.DOTALL).group(1).strip()
+        opts = [f"{l}. {m.group(1)}" for l in ['A', 'B', 'C', 'D'] 
+               for m in [re.search(fr'{l}\.\s*(.+?)(?:\n[A-D]\.|$)', text, re.DOTALL)] if m]
+        ans = clean_answer(re.search(r'Answer:\s*([A-D])', text).group(1)) if re.search(r'Answer:\s*([A-D])', text) else "X"
+        exp = re.search(r'Explanation:\s*(.+)', text, re.DOTALL).group(1).strip() if re.search(r'Explanation:\s*(.+)', text, re.DOTALL) else None
+        return q, opts or [f"{l}. Option" for l in ['A', 'B', 'C', 'D']], ans, exp
+    except:
+        return "Error", [], "X", None
+
+# Quiz logic
+if st.session_state.qn < st.session_state.total_questions:
+    with st.spinner("Loading..."):
+        key = f"qdata_{st.session_state.qn}"
+        if key not in st.session_state:
+            if st.session_state.uploaded_df is not None:
+                row = st.session_state.uploaded_df.iloc[st.session_state.qn]
+                is_bool = row.get('is_boolean', False)
+                opts = [f"A. True", "B. False"] if is_bool else [
+                    f"{l}. {row.get(l.lower(), f'Option {l}')}" for l in ['A', 'B', 'C', 'D']]
+                st.session_state[key] = {
+                    'question': row['question'],
+                    'options': opts,
+                    'answer': row['answer'],
+                    'explanation': row.get('explanation') or generate_explanation(row['question'], row['answer']),
+                    'difficulty': row.get('difficulty', "Not Specified"),
+                    'is_boolean': is_bool
+                }
+            else:
+                for _ in range(5):
+                    raw = (prompt_template | llm | StrOutputParser()).invoke({
+                        'difficulty': st.session_state.difficulty,
+                        'topic': st.session_state.topic,
+                        'used_questions': ", ".join(st.session_state.used_questions[-5:])
+                    })
+                    q_content = raw[:300]
+                    if q_content not in st.session_state.question_cache:
+                        st.session_state.question_cache.add(q_content)
+                        st.session_state.used_questions.append(q_content)
+                        q, o, a, e = parse_question(raw)
+                        st.session_state[key] = {
+                            'question': q,
+                            'options': o,
+                            'answer': a,
+                            'explanation': e or generate_explanation(q, a),
+                            'difficulty': st.session_state.difficulty,
+                            'is_boolean': False
+                        }
+                        break
+
+        qd = st.session_state[key]
+        st.subheader(f"Q{st.session_state.qn+1}/{st.session_state.total_questions}")
+        if qd.get('difficulty'):
+            st.caption(f"Difficulty: {qd['difficulty']}")
+        st.markdown(f"**{qd['question']}**")
+        
+        sel = st.radio(
+            "Choose:",
+            qd['options'][:2] if qd.get('is_boolean', False) else qd['options'],
+            index=None,
+            key=f"q{st.session_state.qn}"
+        )
+        
+        if not st.session_state.answered and st.button("Submit", disabled=sel is None):
+            uc = sel[0].upper() if sel else "X"
+            st.session_state.score += 1 if uc == qd['answer'] else 0
+            st.session_state.results.append({
+                'Question': qd['question'],
+                'User Answer': uc,
+                'Correct Answer': qd['answer'],
+                'Is Correct': uc == qd['answer'],
+                'Explanation': qd['explanation'],
+                'Difficulty': qd.get('difficulty', "Not Specified")
+            })
+            st.session_state.answered = True
+            st.rerun()
+        
+        if st.session_state.answered:
+            cols = st.columns(2)
+            if cols[0].button("← Prev") and st.session_state.qn > 0:
+                st.session_state.qn -= 1
+                st.rerun()
+            if cols[1].button("Next →") and st.session_state.qn < st.session_state.total_questions - 1:
+                st.session_state.qn += 1
+                st.session_state.answered = False
+                st.rerun()
+            elif cols[1].button("Finish"):
+                st.session_state.qn += 1
+                st.rerun()
+
+# Results display
+elif st.session_state.qn == st.session_state.total_questions:
+    st.success("🎉 Done!")
+    st.balloons()
+    score, total = st.session_state.score, st.session_state.total_questions
+    percent = (score / total) * 100
+    
+    st.subheader("Results")
+    cols = st.columns(2)
+    cols[0].metric("Score", f"{score}/{total}")
+    cols[1].metric("Percentage", f"{percent:.1f}%")
+    st.progress(percent / 100)
+    
+    if percent >= 80:
+        st.success("Excellent!")
+    elif percent >= 60:
+        st.info("Good job!")
+    elif percent >= 40:
+        st.warning("Keep practicing")
+    else:
+        st.error("Review needed")
+    
+    st.session_state.show_explanations = st.checkbox(
+        "Show Explanations", value=st.session_state.show_explanations)
+    
+    st.subheader("Review")
+    for i, r in enumerate(st.session_state.results):
+        with st.expander(f"Q{i+1} ({r.get('Difficulty', 'N/A')})", expanded=False):
+            st.markdown(f"**{r['Question']}**")
+            col = "green" if r['Is Correct'] else "red"
+            st.markdown(f"**You:** :{col}[{r['User Answer']}] ({'✅' if r['Is Correct'] else '❌'})")
+            st.markdown(f"**Correct:** {r['Correct Answer']}")
+            if st.session_state.show_explanations:
+                st.markdown("**Explanation:**")
+                st.info(r['Explanation'])
+    
+    st.subheader("Download")
+    st.download_button(
+        "Download CSV",
+        pd.DataFrame(st.session_state.results).to_csv(index=False).encode('utf-8'),
+        f"{st.session_state.user_name}_results.csv",
+        "text/csv"
+    )
+    
+    # Leaderboard
+    st.subheader("🏆 Leaderboard")
+    if not st.session_state.save_to_leaderboard and st.button("Save Score"):
+        st.session_state.leaderboard.append({
+            'Name': st.session_state.user_name,
+            'Score': f"{score}/{total}",
+            'Percentage': f"{percent:.1f}%",
+            'Topic': st.session_state.topic,
+            'Difficulty': st.session_state.difficulty
+        })
+        st.session_state.save_to_leaderboard = True
+        st.success("Saved!")
+        st.rerun()
+    
+    if st.button("👑 Leaderboard" if not st.session_state.show_leaderboard else "❌ Hide"):
+        st.session_state.show_leaderboard = not st.session_state.show_leaderboard
+        st.rerun()
+    
+    if st.session_state.show_leaderboard:
+        if not st.session_state.leaderboard:
+            st.info("Empty leaderboard")
+        else:
+            lb = sorted(
+                st.session_state.leaderboard,
+                key=lambda x: float(x['Percentage'].rstrip('%')),
+                reverse=True
+            )
+            leaderboard_df = pd.DataFrame([
+                {**{'Rank': i+1}, **entry} 
+                for i, entry in enumerate(lb)
+            ])[['Rank', 'Name', 'Score', 'Percentage', 'Topic', 'Difficulty']]
+            
+            st.dataframe(leaderboard_df, hide_index=True)
+    
+    if st.button("🔄 Restart"):
+        used_qs = st.session_state.used_questions.copy()
+        lb = st.session_state.leaderboard.copy()
+        for k in list(st.session_state.keys()):
+            if k not in ['user_name', 'difficulty_mapping', 'used_questions', 'leaderboard']:
+                del st.session_state[k]
+        st.session_state.update({
+            'used_questions': used_qs[-50:],
+            'leaderboard': lb,
+            'quiz_started': False
+        })
+        st.rerun()

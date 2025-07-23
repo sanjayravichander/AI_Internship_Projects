@@ -1,0 +1,14 @@
+langchain
+langchain_community
+groq
+streamlit
+pandas
+numpy
+langchain_groq
+imageio
+ffmpeg-python
+mediapipe
+torch
+gradio
+numpy
+pillow
