@@ -105,10 +105,11 @@ onnxruntime>=1.16.0  # For AnimeGAN v3 support
 
 #### Camera Capture
 1. Select "📷 Camera Capture" tab
-2. Click "📸 Open Camera"
-3. Capture your photo
-4. Automatic processing begins
-5. View and download results
+2. Allow camera access when prompted
+3. Position yourself in the camera view
+4. Click "Capture Image" button
+5. Automatic processing begins
+6. View and download results
 
 ### 2. Video Processing
 
@@ -213,20 +214,91 @@ Transform regular photos into:
 - Grant camera permissions to your browser
 - Check if camera is being used by other applications
 - Try refreshing the page
+- Ensure you're using HTTPS (required for camera access)
+
+#### Video Orientation Issues
+- The app automatically maintains correct video orientation
+- No manual rotation needed - processed videos preserve original orientation
 
 ### Performance Tips
 - **Resize large images** before processing for faster results
 - **Use batch mode** for multiple images to save time
 - **Close unnecessary browser tabs** during video processing
 - **Ensure stable internet** for AI analysis features
+- **Use modern browsers** for best camera capture experience
+
+## 🔒 Security & Privacy
+
+### Data Handling
+- **No Data Storage**: Images and videos are processed locally and not stored on servers
+- **Temporary Files**: All temporary files are automatically cleaned up after processing
+- **API Security**: Groq API key is securely handled through environment variables
+
+### Camera Privacy
+- **Local Processing**: Camera capture is processed locally in your browser
+- **No Recording**: Only captures single frames when you click the capture button
+- **Permission Based**: Requires explicit camera permission from user
+
+## 🌟 Advanced Features
+
+### Batch Processing
+- Process multiple images simultaneously
+- Generate different cartoon styles for the same image
+- Bulk download as ZIP file
+
+### AI Analysis
+- Detailed image descriptions using Groq LLM
+- Intelligent scene understanding
+- Contextual cartoon style recommendations
+
+### Real-time Camera
+- Live camera feed with instant capture
+- Automatic image processing after capture
+- No need to save files manually
+
+## 🚀 Future Enhancements
+
+### Planned Features
+- **Style Transfer**: Additional artistic styles beyond cartoon
+- **Video Filters**: Real-time video filtering
+- **Batch Video Processing**: Process multiple videos at once
+- **Custom Style Training**: Train your own cartoon styles
+
+### Performance Improvements
+- **GPU Acceleration**: Enhanced processing speed with GPU support
+- **Progressive Processing**: Show processing progress for large files
+- **Memory Optimization**: Better handling of large files
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
 4. Test thoroughly
-5. Submit a pull request
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Submit a pull request
+
+### Development Setup
+```bash
+# Clone the repo
+git clone <repository-url>
+cd Cartoonify_AI
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set up environment
+cp .env.example .env
+# Edit .env with your API keys
+
+# Run in development mode
+streamlit run groq_cartoonify.py
+```
 
 ## 📄 License
 
@@ -238,14 +310,42 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Groq**: For AI-powered image analysis
 - **OpenCV**: For computer vision processing
 - **Streamlit**: For the intuitive web interface
+- **streamlit-webrtc**: For camera integration
 
 ## 📞 Support
 
 For issues, questions, or feature requests:
-1. Check the troubleshooting section
-2. Search existing issues
-3. Create a new issue with detailed description
+
+### Getting Help
+1. **Check Documentation**: Review this README and troubleshooting section
+2. **Search Issues**: Look through existing GitHub issues
+3. **Create New Issue**: Provide detailed description with:
+   - Steps to reproduce
+   - Expected vs actual behavior
+   - System information
+   - Error messages (if any)
+
+### Contact Information
+- **GitHub Issues**: [Create an issue](link-to-issues)
+- **Email**: your-email@example.com
+- **Documentation**: [Project Wiki](link-to-wiki)
+
+## 📈 Changelog
+
+### Version 1.0.0
+- ✅ Initial release
+- ✅ Single image cartoonification
+- ✅ Multiple image batch processing
+- ✅ Video processing with correct orientation
+- ✅ Camera capture functionality
+- ✅ AI-powered image analysis
+- ✅ Multiple cartoon styles
+- ✅ Customizable filter settings
 
 ---
 
 **Made with ❤️ and AI** - Transform your world into cartoon magic! 🎨✨
+
+### 🌟 Star this project if you found it helpful!
+
+**Happy Cartoonifying!** 🎉
