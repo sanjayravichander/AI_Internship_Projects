@@ -20,8 +20,6 @@ Transform your photos and videos into stunning cartoon-style artwork using AI-po
 - **Download Ready**: Processed videos ready for immediate download
 
 ### 🎛️ Advanced Controls
-- **Filter Intensity**: Control the strength of cartoon effects (0.1 - 2.0)
-- **Edge Strength**: Adjust edge detection sensitivity (0.1 - 2.0)
 - **Color Enhancement**: Fine-tune saturation (0.5 - 2.0), contrast (0.5 - 2.0), and brightness (0.5 - 2.0)
 - **Preset Configurations**: Quick-apply settings for different styles
 - **Batch Mode**: Generate multiple styles simultaneously
