@@ -1,9 +1,3 @@
-That's an excellent Streamlit quiz application\! It's well-structured, handles both LLM-generated and CSV-uploaded questions, and includes great features like difficulty mapping, explanation generation, and result tracking.
-
-Here's an impressive `README.md` for your project, designed to be clear, engaging, and highlight its key features:
-
------
-
 # 🧠 AI Quiz Game
 
 Test your knowledge with real-time, AI-generated questions or challenge yourself with quizzes from your own CSV files\! This interactive quiz application, built with Streamlit, leverages the power of Large Language Models (LLMs) to create dynamic and engaging learning experiences.
@@ -99,9 +93,6 @@ Follow these steps to get your AI Quiz Game up and running on your local machine
     ```bash
     streamlit run quiz_app.py
     ```
-
-    Your browser should automatically open to the Streamlit application (usually `http://localhost:8501`).
-
 -----
 
 ## 📁 CSV File Format for Uploads
@@ -137,16 +128,4 @@ Feel free to fork this repository, open issues, and submit pull requests. Contri
 
 -----
 
-## 📄 License
-
-This project is open-source and available under the [MIT License](https://www.google.com/search?q=LICENSE).
-
------
-
-## 🙏 Acknowledgements
-
-  * Built with [Streamlit](https://streamlit.io/)
-  * Powered by [Groq](https://groq.com/) for fast LLM inference
-  * [LangChain](https://www.langchain.com/) for LLM orchestration
-
------
+## Happy Learning!!
