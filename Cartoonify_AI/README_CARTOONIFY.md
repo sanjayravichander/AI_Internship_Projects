@@ -342,8 +342,4 @@ For issues, questions, or feature requests:
 
 ---
 
-**Made with ❤️ and AI** - Transform your world into cartoon magic! 🎨✨
-
-### 🌟 Star this project if you found it helpful!
-
 **Happy Cartoonifying!** 🎉
