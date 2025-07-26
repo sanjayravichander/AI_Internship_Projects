@@ -324,9 +324,8 @@ For issues, questions, or feature requests:
    - Error messages (if any)
 
 ### Contact Information
-- **GitHub Issues**: [Create an issue](link-to-issues)
-- **Email**: your-email@example.com
-- **Documentation**: [Project Wiki](link-to-wiki)
+- **Email**: sanjay.1991999@gmail.com
+
 
 ## 📈 Changelog
 
