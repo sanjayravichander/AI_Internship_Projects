@@ -1,0 +1,53 @@
+# Core AI/ML Libraries
+langchain>=0.1.0,<0.2.0
+langchain-community>=0.0.13,<0.1.0
+langchain-groq>=0.0.1,<0.1.0
+langchain-huggingface>=0.0.1,<0.2.0
+groq>=0.4.1,<1.0.0
+
+# Document Processing
+PyPDF2==3.0.1
+python-docx==0.8.11
+python-dotenv==1.0.0
+
+# Vector Store & Embeddings
+faiss-cpu==1.7.4
+sentence-transformers==2.2.2
+
+# Web Framework
+streamlit==1.29.0
+
+# Data Science & Analytics
+pandas==2.1.4
+numpy==1.24.3
+scikit-learn==1.3.2
+
+# Visualization
+plotly==5.17.0
+matplotlib==3.8.2
+seaborn==0.13.0
+wordcloud==1.9.2
+
+# Advanced NLP
+spacy==3.7.2
+textstat==0.7.3
+nltk==3.8.1
+
+# Network Analysis
+networkx==3.2.1
+
+# Topic Modeling
+gensim==4.3.2
+
+# Additional Utilities
+Pillow==10.1.0
+requests==2.31.0
+beautifulsoup4==4.12.2
+
+# Optional: For OCR capabilities
+# pytesseract==0.3.10
+# opencv-python==4.8.1.78
+
+# Optional: For advanced document parsing
+# pdfplumber==0.10.3
+# pymupdf==1.23.8

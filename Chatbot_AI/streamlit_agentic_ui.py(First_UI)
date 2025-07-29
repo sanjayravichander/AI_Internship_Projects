@@ -1,0 +1,746 @@
+import streamlit as st
+import os
+import time
+import json
+from datetime import datetime
+from typing import Dict, List, Any
+import plotly.express as px
+import plotly.graph_objects as go
+import pandas as pd
+from agentic_doc_qa_chatbot import AgenticDocumentQAChatbot
+from rate_limit_handler import handle_groq_error
+import base64
+
+# Page configuration
+st.set_page_config(
+    page_title="🤖 Agentic Document Q&A Assistant",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Custom CSS for enhanced styling
+st.markdown("""
+<style>
+    /* Main theme colors */
+    :root {
+        --primary-color: #1f77b4;
+        --secondary-color: #ff7f0e;
+        --success-color: #2ca02c;
+        --warning-color: #d62728;
+        --background-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    /* Hide Streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Custom header styling */
+    .main-header {
+        background: var(--background-gradient);
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        text-align: center;
+        color: white;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    
+    /* Chat message styling */
+    .user-message {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 15px 15px 5px 15px;
+        margin: 0.5rem 0;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .bot-message {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 15px 15px 15px 5px;
+        margin: 0.5rem 0;
+        box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+    }
+    
+    .agentic-message {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 15px 15px 15px 5px;
+        margin: 0.5rem 0;
+        box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+        border-left: 5px solid #00f2fe;
+    }
+    
+    /* Tool badge styling */
+    .tool-badge {
+        display: inline-block;
+        background: rgba(255,255,255,0.2);
+        color: white;
+        padding: 0.2rem 0.5rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        margin: 0.2rem;
+        backdrop-filter: blur(10px);
+    }
+    
+    /* Stats card styling */
+    .stats-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        border-left: 5px solid var(--primary-color);
+        margin: 1rem 0;
+    }
+    
+    /* Animated elements */
+    .pulse {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    /* Sidebar styling */
+    .sidebar-content {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 10px;
+        margin: 1rem 0;
+    }
+    
+    /* File upload area */
+    .upload-area {
+        border: 2px dashed #667eea;
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        background: rgba(102, 126, 234, 0.1);
+        margin: 1rem 0;
+    }
+    
+    /* Loading animation */
+    .loading-dots {
+        display: inline-block;
+    }
+    
+    .loading-dots::after {
+        content: '';
+        animation: dots 1.5s steps(5, end) infinite;
+    }
+    
+    @keyframes dots {
+        0%, 20% { content: ''; }
+        40% { content: '.'; }
+        60% { content: '..'; }
+        80%, 100% { content: '...'; }
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Initialize session state
+def initialize_session_state():
+    """Initialize all session state variables"""
+    if 'chatbot' not in st.session_state:
+        st.session_state.chatbot = None
+    if 'chat_history' not in st.session_state:
+        st.session_state.chat_history = []
+    if 'stats' not in st.session_state:
+        st.session_state.stats = {
+            'total_questions': 0,
+            'agentic_responses': 0,
+            'basic_responses': 0,
+            'tools_usage': {},
+            'response_times': [],
+            'session_start': datetime.now()
+        }
+    if 'current_pdf' not in st.session_state:
+        st.session_state.current_pdf = None
+    if 'processing_status' not in st.session_state:
+        st.session_state.processing_status = None
+
+def create_animated_header():
+    """Create an animated header with gradient background"""
+    st.markdown("""
+    <div class="main-header pulse">
+        <h1>🤖 Agentic Document Q&A Assistant</h1>
+        <p>Powered by Advanced AI Agents & Retrieval-Augmented Generation</p>
+        <div style="margin-top: 1rem;">
+            <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.2rem;">
+                🧠 Multi-Agent Reasoning
+            </span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.2rem;">
+                📚 Document Analysis
+            </span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; margin: 0.2rem;">
+                🔍 Intelligent Search
+            </span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+def create_sidebar():
+    """Create an enhanced sidebar with controls and information"""
+    with st.sidebar:
+        st.markdown('<div class="sidebar-content">', unsafe_allow_html=True)
+        st.markdown("### 🎛️ Control Panel")
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # PDF Upload Section
+        st.markdown("#### 📄 Document Upload")
+        uploaded_file = st.file_uploader(
+            "Choose a PDF file",
+            type="pdf",
+            help="Upload a PDF document to analyze"
+        )
+        
+        # Predefined PDF option
+        st.markdown("#### 📚 Or use sample document")
+        use_sample = st.checkbox("Use Attention Paper (Sample)", value=True)
+        
+        if use_sample:
+            import os
+            sample_path = os.getenv("SAMPLE_PDF_PATH", "sample_document.pdf")
+            if os.path.exists(sample_path):
+                st.success("✅ Sample document available")
+                current_pdf = sample_path
+            else:
+                st.error(f"❌ Sample document not found at {sample_path}")
+                current_pdf = None
+        else:
+            current_pdf = uploaded_file
+        
+        # Initialize chatbot button
+        if st.button("🚀 Initialize Chatbot", type="primary"):
+            if current_pdf:
+                initialize_chatbot(current_pdf)
+            else:
+                st.error("Please select a PDF file first!")
+        
+        # Chatbot status
+        st.markdown("#### 🤖 Chatbot Status")
+        if st.session_state.chatbot:
+            st.success("✅ Chatbot Ready")
+            st.info(f"📄 Document: {os.path.basename(st.session_state.current_pdf)}")
+            
+            # Agent status
+            if st.session_state.chatbot.agent_executor:
+                st.success("🧠 Agentic AI: Enabled")
+            else:
+                st.warning("🧠 Agentic AI: Disabled (Basic mode)")
+        else:
+            st.warning("⏳ Chatbot not initialized")
+        
+        # Quick actions
+        st.markdown("#### ⚡ Quick Actions")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🧹 Clear Chat"):
+                st.session_state.chat_history = []
+                st.rerun()
+        with col2:
+            if st.button("📊 Reset Stats"):
+                st.session_state.stats = {
+                    'total_questions': 0,
+                    'agentic_responses': 0,
+                    'basic_responses': 0,
+                    'tools_usage': {},
+                    'response_times': [],
+                    'session_start': datetime.now()
+                }
+                st.rerun()
+        
+        # Force refresh option
+        if st.session_state.chatbot:
+            if st.button("🔄 Force Refresh Document", help="Recreate vector store for current document"):
+                if st.session_state.current_pdf:
+                    # Force recreate the chatbot
+                    with st.spinner("🔄 Refreshing document analysis..."):
+                        try:
+                            if isinstance(st.session_state.current_pdf, str):
+                                # File path
+                                chatbot = AgenticDocumentQAChatbot(st.session_state.current_pdf, force_recreate=True)
+                            else:
+                                # This shouldn't happen in normal flow, but handle it
+                                st.error("Cannot refresh uploaded file. Please re-upload the document.")
+                                return
+                            
+                            st.session_state.chatbot = chatbot
+                            st.session_state.chat_history = []
+                            st.success("✅ Document refreshed! Vector store recreated.")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Error refreshing document: {str(e)}")
+        
+        # Memory management
+        st.markdown("#### 🧠 Memory Management")
+        if st.button("💭 Recall Memory"):
+            if st.session_state.chatbot:
+                memory_info = st.session_state.chatbot.conversation_memory_tool("recall")
+                st.text_area("Recent Conversations", memory_info, height=100)
+        
+        if st.button("🗑️ Clear Memory"):
+            if st.session_state.chatbot:
+                st.session_state.chatbot.conversation_memory_tool("clear")
+                st.success("Memory cleared!")
+
+def initialize_chatbot(pdf_path):
+    """Initialize the chatbot with progress tracking"""
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    try:
+        status_text.text("🔄 Initializing chatbot...")
+        progress_bar.progress(20)
+        
+        # Always force recreate for new documents to ensure fresh vector store
+        force_recreate = True
+        
+        if isinstance(pdf_path, str):
+            # Using file path (sample document)
+            current_pdf_name = os.path.basename(pdf_path)
+            
+            # Only skip recreation if it's the exact same document and chatbot exists
+            if (hasattr(st.session_state, 'current_pdf') and 
+                hasattr(st.session_state, 'chatbot') and
+                st.session_state.current_pdf and 
+                os.path.basename(st.session_state.current_pdf) == current_pdf_name and
+                st.session_state.chatbot is not None):
+                force_recreate = False
+                st.success("🎉 Using existing document analysis!")
+                return
+                
+            status_text.text("🔄 Processing document with fresh analysis...")
+            progress_bar.progress(40)
+            
+            chatbot = AgenticDocumentQAChatbot(pdf_path, force_recreate=force_recreate)
+            st.session_state.current_pdf = pdf_path
+        else:
+            # Using uploaded file - always force recreate for uploaded files
+            force_recreate = True
+            
+            # Save uploaded file temporarily with unique name
+            import tempfile
+            import hashlib
+            temp_dir = tempfile.gettempdir()
+            
+            # Create unique filename based on content
+            file_hash = hashlib.md5(pdf_path.getbuffer()).hexdigest()[:8]
+            temp_path = os.path.join(temp_dir, f"uploaded_{file_hash}_{pdf_path.name}")
+            
+            with open(temp_path, "wb") as f:
+                f.write(pdf_path.getbuffer())
+                
+            status_text.text("📄 Processing uploaded document with fresh analysis...")
+            progress_bar.progress(50)
+            
+            chatbot = AgenticDocumentQAChatbot(temp_path, force_recreate=force_recreate)
+            st.session_state.current_pdf = pdf_path.name
+        
+        progress_bar.progress(100)
+        status_text.text("✅ Chatbot initialized successfully!")
+        
+        st.session_state.chatbot = chatbot
+        
+        # Clear previous chat history when switching documents
+        if force_recreate:
+            st.session_state.chat_history = []
+            st.success("🎉 New document loaded! Previous chat history cleared.")
+        else:
+            st.success("🎉 Chatbot is ready to answer your questions!")
+        
+        time.sleep(1)
+        status_text.empty()
+        progress_bar.empty()
+        
+    except Exception as e:
+        st.error(f"❌ Error initializing chatbot: {str(e)}")
+        progress_bar.empty()
+        status_text.empty()
+
+def display_chat_message(message: str, is_user: bool = False, is_agentic: bool = False, 
+                        tools_used: List[str] = None, response_time: float = None):
+    """Display a chat message with enhanced styling"""
+    if is_user:
+        st.markdown(f"""
+        <div class="user-message">
+            <strong>👤 You:</strong><br>
+            {message}
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        message_class = "agentic-message" if is_agentic else "bot-message"
+        icon = "🧠" if is_agentic else "🤖"
+        mode_text = "Agentic AI" if is_agentic else "Assistant"
+        
+        tools_html = ""
+        if tools_used:
+            tools_html = "<div style='margin-top: 0.5rem;'>"
+            for tool in tools_used:
+                tools_html += f'<span class="tool-badge">🔧 {tool}</span>'
+            tools_html += "</div>"
+        
+        response_time_html = ""
+        if response_time:
+            response_time_html = f"<small style='opacity: 0.8;'>⏱️ {response_time:.2f}s</small>"
+        
+        st.markdown(f"""
+        <div class="{message_class}">
+            <strong>{icon} {mode_text}:</strong><br>
+            {message}
+            {tools_html}
+            {response_time_html}
+        </div>
+        """, unsafe_allow_html=True)
+
+def update_stats(response_mode: str, tools_used: List[str] = None, response_time: float = None):
+    """Update session statistics"""
+    st.session_state.stats['total_questions'] += 1
+    
+    if response_mode == 'agentic':
+        st.session_state.stats['agentic_responses'] += 1
+    else:
+        st.session_state.stats['basic_responses'] += 1
+    
+    if tools_used:
+        for tool in tools_used:
+            if tool in st.session_state.stats['tools_usage']:
+                st.session_state.stats['tools_usage'][tool] += 1
+            else:
+                st.session_state.stats['tools_usage'][tool] = 1
+    
+    if response_time:
+        st.session_state.stats['response_times'].append(response_time)
+
+def create_stats_dashboard():
+    """Create an interactive statistics dashboard"""
+    st.markdown("### 📊 Session Analytics")
+    
+    stats = st.session_state.stats
+    
+    # Key metrics
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.markdown("""
+        <div class="stats-card">
+            <h3 style="color: #1f77b4; margin: 0;">📝</h3>
+            <h2 style="margin: 0.5rem 0;">{}</h2>
+            <p style="margin: 0; color: #666;">Total Questions</p>
+        </div>
+        """.format(stats['total_questions']), unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="stats-card">
+            <h3 style="color: #2ca02c; margin: 0;">🧠</h3>
+            <h2 style="margin: 0.5rem 0;">{}</h2>
+            <p style="margin: 0; color: #666;">Agentic Responses</p>
+        </div>
+        """.format(stats['agentic_responses']), unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div class="stats-card">
+            <h3 style="color: #ff7f0e; margin: 0;">🤖</h3>
+            <h2 style="margin: 0.5rem 0;">{}</h2>
+            <p style="margin: 0; color: #666;">Basic Responses</p>
+        </div>
+        """.format(stats['basic_responses']), unsafe_allow_html=True)
+    
+    with col4:
+        avg_time = sum(stats['response_times']) / len(stats['response_times']) if stats['response_times'] else 0
+        st.markdown("""
+        <div class="stats-card">
+            <h3 style="color: #d62728; margin: 0;">⏱️</h3>
+            <h2 style="margin: 0.5rem 0;">{:.2f}s</h2>
+            <p style="margin: 0; color: #666;">Avg Response Time</p>
+        </div>
+        """.format(avg_time), unsafe_allow_html=True)
+    
+    # Charts
+    if stats['total_questions'] > 0:
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Response mode distribution
+            mode_data = {
+                'Mode': ['Agentic', 'Basic'],
+                'Count': [stats['agentic_responses'], stats['basic_responses']]
+            }
+            fig_pie = px.pie(
+                values=mode_data['Count'], 
+                names=mode_data['Mode'],
+                title="Response Mode Distribution",
+                color_discrete_sequence=['#4facfe', '#f093fb']
+            )
+            fig_pie.update_layout(height=300)
+            st.plotly_chart(fig_pie, use_container_width=True)
+        
+        with col2:
+            # Tools usage
+            if stats['tools_usage']:
+                tools_df = pd.DataFrame(
+                    list(stats['tools_usage'].items()),
+                    columns=['Tool', 'Usage Count']
+                )
+                fig_bar = px.bar(
+                    tools_df, 
+                    x='Tool', 
+                    y='Usage Count',
+                    title="Tools Usage Frequency",
+                    color='Usage Count',
+                    color_continuous_scale='viridis'
+                )
+                fig_bar.update_layout(height=300)
+                st.plotly_chart(fig_bar, use_container_width=True)
+        
+        # Response time trend
+        if len(stats['response_times']) > 1:
+            fig_line = go.Figure()
+            fig_line.add_trace(go.Scatter(
+                y=stats['response_times'],
+                mode='lines+markers',
+                name='Response Time',
+                line=dict(color='#667eea', width=3),
+                marker=dict(size=8)
+            ))
+            fig_line.update_layout(
+                title="Response Time Trend",
+                xaxis_title="Question Number",
+                yaxis_title="Response Time (seconds)",
+                height=300
+            )
+            st.plotly_chart(fig_line, use_container_width=True)
+
+def create_chat_interface():
+    """Create the main chat interface"""
+    st.markdown("### 💬 Chat Interface")
+    
+    # Display chat history
+    chat_container = st.container()
+    with chat_container:
+        for message in st.session_state.chat_history:
+            display_chat_message(
+                message['content'],
+                message['is_user'],
+                message.get('is_agentic', False),
+                message.get('tools_used', []),
+                message.get('response_time')
+            )
+    
+    # Chat input
+    if st.session_state.chatbot:
+        # Dynamic suggested questions based on document analysis
+        st.markdown("#### 💡 Suggested Questions")
+        
+        # Get suggested questions from the chatbot
+        try:
+            suggestions = st.session_state.chatbot.get_suggested_questions()
+            if not suggestions:
+                suggestions = [
+                    "What is this document about?",
+                    "What are the main topics covered?",
+                    "What are the key concepts explained?"
+                ]
+        except:
+            suggestions = [
+                "What is this document about?",
+                "What are the main topics covered?",
+                "What are the key concepts explained?"
+            ]
+        
+        # Display suggestions in a more compact format
+        num_cols = min(3, len(suggestions))  # Max 3 columns for better layout
+        cols = st.columns(num_cols)
+        
+        for i, suggestion in enumerate(suggestions[:6]):  # Show max 6 suggestions
+            col_idx = i % num_cols
+            with cols[col_idx]:
+                if st.button(suggestion, key=f"suggestion_{i}", use_container_width=True):
+                    process_question(suggestion)
+        
+        # Manual input
+        user_question = st.chat_input("Ask a question about the document...")
+        
+        if user_question:
+            process_question(user_question)
+    else:
+        st.warning("⚠️ Please initialize the chatbot first using the sidebar.")
+
+def process_question(question: str):
+    """Process a user question and display the response"""
+    # Add user message to history
+    st.session_state.chat_history.append({
+        'content': question,
+        'is_user': True,
+        'timestamp': datetime.now()
+    })
+    
+    # Show thinking animation
+    with st.spinner("🤔 AI is thinking..."):
+        start_time = time.time()
+        
+        try:
+            # Get response from chatbot
+            response = st.session_state.chatbot.ask_question(question)
+            
+            end_time = time.time()
+            response_time = end_time - start_time
+            
+            # Check if we got a valid response
+            if not response.get('answer') or response['answer'].strip() == "":
+                response['answer'] = "I apologize, but I couldn't generate a proper response. Please try rephrasing your question."
+                response['mode'] = 'error'
+            
+        except Exception as e:
+            end_time = time.time()
+            response_time = end_time - start_time
+            
+            # Handle Groq API errors specially
+            error_str = str(e)
+            error_info = handle_groq_error(error_str)
+            
+            if error_info['is_rate_limit']:
+                response = {
+                    'answer': error_info['friendly_message'],
+                    'mode': 'rate_limit',
+                    'tools_used': [],
+                    'wait_seconds': error_info.get('wait_seconds', 60)
+                }
+            else:
+                response = {
+                    'answer': f"I encountered an error while processing your question: {error_str}. Please try again.",
+                    'mode': 'error',
+                    'tools_used': []
+                }
+    
+    # Add bot response to history
+    is_agentic = response.get('mode') == 'agentic'
+    tools_used = response.get('tools_used', [])
+    
+    # Add note if there was a fallback
+    note = response.get('note', '')
+    answer_with_note = response['answer']
+    if note:
+        answer_with_note += f"\n\n💡 {note}"
+    
+    st.session_state.chat_history.append({
+        'content': answer_with_note,
+        'is_user': False,
+        'is_agentic': is_agentic,
+        'tools_used': tools_used,
+        'response_time': response_time,
+        'timestamp': datetime.now(),
+        'note': note
+    })
+    
+    # Update statistics
+    update_stats(response.get('mode', 'basic'), tools_used, response_time)
+    
+    # Show success message if agentic mode worked
+    if is_agentic and tools_used:
+        st.success(f"🧠 Agentic AI successfully used {len(tools_used)} tool(s): {', '.join(tools_used)}")
+    elif response.get('mode') == 'basic' and note:
+        st.warning(f"⚠️ {note}")
+    elif response.get('mode') == 'rate_limit':
+        wait_seconds = response.get('wait_seconds', 60)
+        if wait_seconds < 120:
+            st.warning(f"🚨 Rate limit reached. Please wait ~{int(wait_seconds)} seconds and try again.")
+            # Add a countdown timer
+            if st.button("🔄 Retry in a moment"):
+                time.sleep(2)  # Brief pause
+                st.rerun()
+        else:
+            st.error("🚨 Daily token limit reached. Please try again later or upgrade your Groq plan.")
+    elif response.get('mode') == 'error':
+        st.error("❌ There was an issue processing your question. Please try again.")
+    
+    # Rerun to update the display
+    st.rerun()
+
+def create_export_functionality():
+    """Create export functionality for chat history"""
+    st.markdown("### 📥 Export Chat History")
+    
+    if st.session_state.chat_history:
+        # Prepare data for export
+        export_data = []
+        for message in st.session_state.chat_history:
+            export_data.append({
+                'Timestamp': message['timestamp'].strftime('%Y-%m-%d %H:%M:%S'),
+                'Speaker': 'User' if message['is_user'] else 'Assistant',
+                'Mode': 'Agentic' if message.get('is_agentic') else 'Basic',
+                'Content': message['content'],
+                'Tools Used': ', '.join(message.get('tools_used', [])),
+                'Response Time': message.get('response_time', 0)
+            })
+        
+        df = pd.DataFrame(export_data)
+        
+        # Download buttons
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            csv = df.to_csv(index=False)
+            st.download_button(
+                label="📄 Download as CSV",
+                data=csv,
+                file_name=f"chat_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv"
+            )
+        
+        with col2:
+            json_data = df.to_json(orient='records', indent=2)
+            st.download_button(
+                label="📋 Download as JSON",
+                data=json_data,
+                file_name=f"chat_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                mime="application/json"
+            )
+    else:
+        st.info("No chat history to export yet.")
+
+def main():
+    """Main application function"""
+    # Initialize session state
+    initialize_session_state()
+    
+    # Create animated header
+    create_animated_header()
+    
+    # Create sidebar
+    create_sidebar()
+    
+    # Main content area
+    tab1, tab2, tab3 = st.tabs(["💬 Chat", "📊 Analytics", "📥 Export"])
+    
+    with tab1:
+        create_chat_interface()
+    
+    with tab2:
+        create_stats_dashboard()
+    
+    with tab3:
+        create_export_functionality()
+    
+    # Footer
+    st.markdown("---")
+    st.markdown("""
+    <div style="text-align: center; color: #666; padding: 1rem;">
+        🤖 Agentic Document Q&A Assistant | Powered by Groq & LangChain | 
+        Built with ❤️ using Streamlit
+    </div>
+    """, unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()
