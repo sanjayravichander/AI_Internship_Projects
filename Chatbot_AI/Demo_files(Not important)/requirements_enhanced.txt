@@ -1,0 +1,87 @@
+# Enhanced Multi-Document AI Requirements
+# Core AI/ML Libraries
+langchain>=0.1.0,<0.2.0
+langchain-community>=0.0.13,<0.1.0
+langchain-groq>=0.0.1,<0.1.0
+langchain-huggingface>=0.0.1,<0.2.0
+groq>=0.4.1,<1.0.0
+
+# Document Processing
+PyPDF2==3.0.1
+python-docx==0.8.11
+python-dotenv==1.0.0
+docx2txt==0.8
+
+# Enhanced Vector Store & Embeddings
+faiss-cpu==1.7.4
+sentence-transformers>=2.2.2,<3.0.0
+
+# Multi-language Support & Translation
+googletrans==4.0.0rc1
+langdetect==1.0.9
+
+# Enhanced Embeddings Models
+# These are the best embedding models for multi-language support:
+# 1. intfloat/multilingual-e5-large (RECOMMENDED - Best overall performance)
+# 2. intfloat/multilingual-e5-base (Good balance of performance and speed)
+# 3. sentence-transformers/paraphrase-multilingual-mpnet-base-v2 (Good for paraphrasing)
+# 4. jinaai/jina-embeddings-v3 (Latest from Jina AI)
+
+# Hybrid Search Components
+rank-bm25==0.2.2
+
+# Web Framework
+streamlit>=1.29.0,<2.0.0
+
+# Data Science & Analytics
+pandas>=2.1.4,<3.0.0
+numpy>=1.24.3,<2.0.0
+scikit-learn>=1.3.2,<2.0.0
+
+# Visualization
+plotly>=5.17.0,<6.0.0
+matplotlib>=3.8.2,<4.0.0
+seaborn>=0.13.0,<1.0.0
+wordcloud>=1.9.2,<2.0.0
+
+# Advanced NLP
+spacy>=3.7.2,<4.0.0
+textstat>=0.7.3,<1.0.0
+nltk>=3.8.1,<4.0.0
+
+# Network Analysis
+networkx>=3.2.1,<4.0.0
+
+# Topic Modeling
+gensim>=4.3.2,<5.0.0
+
+# Additional Utilities
+Pillow>=10.1.0,<11.0.0
+requests>=2.31.0,<3.0.0
+beautifulsoup4>=4.12.2,<5.0.0
+
+# Enhanced Language Processing
+polyglot==16.7.4
+pycountry==22.3.13
+
+# Performance Optimization
+accelerate>=0.20.0
+torch>=2.0.0
+
+# Optional: For advanced OCR capabilities
+# pytesseract==0.3.10
+# opencv-python==4.8.1.78
+
+# Optional: For advanced document parsing
+# pdfplumber==0.10.3
+# pymupdf==1.23.8
+
+# Optional: For advanced translation
+# transformers>=4.30.0
+# tokenizers>=0.13.0
+
+# Development and Testing
+# pytest>=7.4.0
+# pytest-cov>=4.1.0
+# black>=23.0.0
+# flake8>=6.0.0
