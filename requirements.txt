@@ -12,7 +12,7 @@ pyttsx3
 python-dotenv
 apscheduler
 transformers
-googletrans==3.1.0a0
+googletrans==3.1.0
 requests
 matplotlib
 faiss-cpu
@@ -21,3 +21,7 @@ pypdf
 beautifulsoup4
 duckduckgo-search
 python-dateutil
+fpdf
+reportlab
+torch
+torchvision
