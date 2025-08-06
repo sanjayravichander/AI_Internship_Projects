@@ -1,1 +1,4 @@
-mediapipe
+gradio>=3.0.0,<4.0.0
+opencv-python>=4.8.0
+mediapipe>=0.10.0
+numpy>=1.24.0
