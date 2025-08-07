@@ -113,7 +113,3 @@ A custom `classify_gesture()` function analyzes finger landmarks and checks whet
 
 **Web Interface**  
 Gradio displays live video with dynamic frame updates and provides user controls via "Start" and "Stop" buttons.
-
----
-
-Let me know if you want further customization or if you want this update pushed directly to your repository!
