@@ -1,3 +1,7 @@
+Here’s an improved and corrected version of your README.md. I’ve addressed formatting issues, clarified instructions, and improved readability while keeping your content intact.
+
+---
+
 # 🖐️ Fast Hand Gesture Detection
 
 This project provides a **real-time hand gesture recognition application** using **OpenCV** and **MediaPipe**. It captures video from your webcam, detects hand landmarks, and classifies gestures such as:
@@ -22,7 +26,7 @@ The user interface is built using **Gradio**, enabling easy access via a web bro
 - ⚡ **High Performance**  
   Uses a lightweight MediaPipe model, processes one hand, and skips frames to ensure real-time inference.
 
-- 🧠 **Recognized Gestures**
+- 🧠 **Recognized Gestures**  
   - 👍 Thumbs Up  
   - ✌️ Peace  
   - ✊ Fist  
@@ -35,75 +39,81 @@ The user interface is built using **Gradio**, enabling easy access via a web bro
 
 ## 📋 Requirements
 
-Make sure you have **Python 3.7+** installed, and install the following libraries:
+Make sure you have **Python 3.7+** installed. Then install the following libraries:
 
 ```bash
 pip install gradio opencv-python mediapipe numpy
-Or use the provided requirements.txt:
+```
+
+Or use the provided `requirements.txt`:
+
+```
 gradio
 opencv-python
 mediapipe
 numpy
 ```
 
+---
+
 ## ⚙️ Installation 
-Clone the Repository
+
+Clone the repository:
 
 ```bash
-git clone https://your-repository-url.git
-cd your-repository-directory
+git clone https://github.com/sanjayravichander/AI_Internship_Projects.git
+cd AI_Internship_Projects/Hand_gesture_AI
 ```
+
+Create and activate a virtual environment (recommended):
+
 ```bash
 python -m venv venv
-# Activate the environment:
 # On macOS/Linux:
 source venv/bin/activate
 # On Windows:
 venv\Scripts\activate
-Install the Dependencies
 ```
+
+Install the dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
+---
+
 ## 🚀 Usage
+
 To start the application, run:
 
 ```bash
 python app.py
 ```
-## This will launch a Gradio web server locally.
 
-## Open the displayed URL (usually http://127.0.0.1:7860) in your browser.
+This will launch a Gradio web server locally.
 
-## Click the 🔴 Start button to begin webcam streaming.
+- Open the displayed URL (usually http://127.0.0.1:7860) in your browser.
+- Click the 🔴 Start button to begin webcam streaming.
+- Show your hand gestures to see the recognition in action.
+- Click ⏹️ Stop to end the session.
 
-## Show your hand gestures to see the recognition in action.
-
-## Click ⏹️ Stop to end the session.
+---
 
 ## 🔧 How It Works
-Video Capture
 
-OpenCV captures frames from your webcam.
+**Video Capture**  
+OpenCV captures frames from your webcam at a lower resolution to boost performance.
 
-Lower resolution is used to boost performance.
+**Hand Tracking**  
+MediaPipe’s Hands model detects hand landmarks (optimized with `model_complexity=0` and `max_num_hands=1`).
 
-Hand Tracking
+**Gesture Classification**  
+A custom `classify_gesture()` function analyzes finger landmarks and checks whether fingers are curled or extended to classify gestures.
 
-MediaPipe’s Hands model detects landmarks.
+**Web Interface**  
+Gradio displays live video with dynamic frame updates and provides user controls via "Start" and "Stop" buttons.
 
-Optimized with model_complexity=0 and max_num_hands=1.
+---
 
-Gesture Classification
-
-A custom classify_gesture() function analyzes finger landmarks.
-
-It checks whether fingers are curled or extended to classify gestures.
-
-Web Interface
-
-Gradio displays live video with dynamic frame updates.
-
-Provides user controls via "Start" and "Stop" buttons.
+Let me know if you want further customization or if you want this update pushed directly to your repository!
