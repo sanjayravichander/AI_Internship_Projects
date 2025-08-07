@@ -40,27 +40,20 @@ Make sure you have **Python 3.7+** installed, and install the following librarie
 ```bash
 pip install gradio opencv-python mediapipe numpy
 Or use the provided requirements.txt:
-
-txt
-Copy
-Edit
 gradio
 opencv-python
 mediapipe
 numpy
-⚙️ Installation
+```
+
+## ⚙️ Installation 
 Clone the Repository
 
-bash
-Copy
-Edit
+```bash
 git clone https://your-repository-url.git
 cd your-repository-directory
-(Optional) Create a Virtual Environment
-
-bash
-Copy
-Edit
+```
+```bash
 python -m venv venv
 # Activate the environment:
 # On macOS/Linux:
@@ -68,29 +61,29 @@ source venv/bin/activate
 # On Windows:
 venv\Scripts\activate
 Install the Dependencies
+```
 
-bash
-Copy
-Edit
+```bash
 pip install -r requirements.txt
-🚀 Usage
+```
+
+## 🚀 Usage
 To start the application, run:
 
-bash
-Copy
-Edit
+```bash
 python app.py
-This will launch a Gradio web server locally.
+```
+## This will launch a Gradio web server locally.
 
-Open the displayed URL (usually http://127.0.0.1:7860) in your browser.
+## Open the displayed URL (usually http://127.0.0.1:7860) in your browser.
 
-Click the 🔴 Start button to begin webcam streaming.
+## Click the 🔴 Start button to begin webcam streaming.
 
-Show your hand gestures to see the recognition in action.
+## Show your hand gestures to see the recognition in action.
 
-Click ⏹️ Stop to end the session.
+## Click ⏹️ Stop to end the session.
 
-🔧 How It Works
+## 🔧 How It Works
 Video Capture
 
 OpenCV captures frames from your webcam.
