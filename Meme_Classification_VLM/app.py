@@ -17,8 +17,14 @@ client = Groq(api_key=GROQ_API_KEY)
 # ---------------------- Load CLIP model ----------------------
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model_id = "openai/clip-vit-large-patch14"
-model = CLIPModel.from_pretrained(model_id).to(device)
-processor = CLIPProcessor.from_pretrained(model_id)
+
+# Use a cache directory for models
+model_cache_dir = "models/clip"
+os.makedirs(model_cache_dir, exist_ok=True)
+
+# Download and load models
+model = CLIPModel.from_pretrained(model_id, cache_dir=model_cache_dir).to(device)
+processor = CLIPProcessor.from_pretrained(model_id, cache_dir=model_cache_dir)
 
 # ---------------------- Define meme categories ----------------------
 categories = [
