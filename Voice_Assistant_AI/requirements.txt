@@ -1,0 +1,15 @@
+streamlit
+speechrecognition
+pyttsx3
+pyaudio
+apscheduler
+langchain
+langchain-groq
+langchain-core
+python-dotenv
+openai
+requests
+email-validator
+python-dateutil
+pytz
+sqlite3
