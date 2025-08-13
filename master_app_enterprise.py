@@ -558,7 +558,8 @@ class EnterpriseAppRunner:
     """Advanced application runner with enterprise-grade features"""
     
     def __init__(self):
-        self.base_path = Path("c:/Users/DELL/AI_Internship_Projects")
+        # Use current working directory or script directory for portability
+        self.base_path = Path(__file__).parent.resolve()
         self.loaded_modules = {}
         self.performance_metrics = {}
         

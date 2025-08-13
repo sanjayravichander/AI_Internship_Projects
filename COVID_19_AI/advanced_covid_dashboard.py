@@ -7,6 +7,7 @@ from plotly.subplots import make_subplots
 import seaborn as sns
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
+from pathlib import Path
 import warnings
 warnings.filterwarnings('ignore')
 from dotenv import load_dotenv
@@ -94,7 +95,9 @@ class AdvancedCOVIDDashboard:
     def load_and_process_data(self):
         """Load and process the COVID-19 data"""
         try:
-            self.df = pd.read_csv("c:/Users/DELL/AI_Internship_Projects/COVID_19_AI/StatewiseTestingDetails.csv")
+            # Use relative path for portability
+            csv_path = Path(__file__).parent / "StatewiseTestingDetails.csv"
+            self.df = pd.read_csv(csv_path)
             
             # Data preprocessing
             self.df['Date'] = pd.to_datetime(self.df['Date'])

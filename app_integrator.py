@@ -245,8 +245,8 @@ class ApplicationIntegrator:
     def execute_application_safely(self, app_path: str, app_file: str, app_name: str) -> bool:
         """Execute an application with full integration and error handling."""
         try:
-            # Setup paths
-            base_path = Path("c:/Users/DELL/AI_Internship_Projects")
+            # Setup paths - use current working directory for portability
+            base_path = Path(__file__).parent.resolve()
             full_path = base_path / app_path / app_file
             
             if not full_path.exists():
