@@ -1,0 +1,151 @@
+# ========================================
+# AI INTERNSHIP PROJECTS - MASTER REQUIREMENTS
+# ========================================
+# Comprehensive dependencies for all 9 AI applications
+# Compatible with Python 3.8+
+
+# ========================================
+# CORE AI/ML FRAMEWORKS
+# ========================================
+# LangChain ecosystem for AI applications
+langchain>=0.1.0,<0.2.0
+langchain-community>=0.0.13,<0.1.0
+langchain-experimental>=0.0.50,<0.1.0
+langchain-groq>=0.0.1,<0.1.0
+langchain-huggingface>=0.0.1,<0.2.0
+
+# Large Language Models
+groq>=0.4.1,<1.0.0
+transformers>=4.35.0,<5.0.0
+torch>=2.0.0,<3.0.0
+torchvision>=0.15.0,<1.0.0
+
+# ========================================
+# WEB FRAMEWORKS & UI
+# ========================================
+streamlit>=1.29.0,<2.0.0
+gradio>=3.0.0,<4.0.0
+
+# ========================================
+# DATA SCIENCE & ANALYTICS
+# ========================================
+pandas>=1.5.0,<3.0.0
+numpy>=1.24.0,<2.0.0
+scikit-learn>=1.3.0,<2.0.0
+scipy>=1.10.0,<2.0.0
+statsmodels>=0.14.0,<1.0.0
+
+# ========================================
+# VISUALIZATION
+# ========================================
+plotly>=5.15.0,<6.0.0
+matplotlib>=3.6.0,<4.0.0
+seaborn>=0.12.0,<1.0.0
+wordcloud>=1.9.0,<2.0.0
+
+# ========================================
+# COMPUTER VISION
+# ========================================
+opencv-python>=4.8.0,<5.0.0
+mediapipe>=0.10.0,<1.0.0
+pillow>=9.0.0,<11.0.0
+onnxruntime>=1.15.0,<2.0.0
+
+# ========================================
+# NATURAL LANGUAGE PROCESSING
+# ========================================
+spacy>=3.7.0,<4.0.0
+nltk>=3.8.0,<4.0.0
+textstat>=0.7.0,<1.0.0
+sentence-transformers>=2.2.0,<3.0.0
+
+# ========================================
+# VECTOR DATABASES & SEARCH
+# ========================================
+faiss-cpu>=1.7.0,<2.0.0
+
+# ========================================
+# DOCUMENT PROCESSING
+# ========================================
+PyPDF2>=3.0.0,<4.0.0
+pypdf>=3.0.0,<4.0.0
+python-docx>=0.8.0,<1.0.0
+reportlab>=4.0.0,<5.0.0
+fpdf>=2.5.0,<3.0.0
+
+# ========================================
+# VOICE & SPEECH
+# ========================================
+speechrecognition>=3.10.0,<4.0.0
+pyttsx3>=2.90,<3.0.0
+
+# ========================================
+# SCHEDULING & AUTOMATION
+# ========================================
+apscheduler>=3.10.0,<4.0.0
+python-dateutil>=2.8.0,<3.0.0
+
+# ========================================
+# WEB & API UTILITIES
+# ========================================
+requests>=2.31.0,<3.0.0
+beautifulsoup4>=4.12.0,<5.0.0
+duckduckgo-search>=3.9.0,<4.0.0
+python-dotenv>=1.0.0,<2.0.0
+
+# ========================================
+# TRANSLATION & INTERNATIONALIZATION
+# ========================================
+googletrans==4.0.0rc1
+
+# ========================================
+# NETWORK ANALYSIS
+# ========================================
+networkx>=3.2.0,<4.0.0
+
+# ========================================
+# TOPIC MODELING
+# ========================================
+gensim>=4.3.0,<5.0.0
+
+# ========================================
+# VIDEO PROCESSING (Optional)
+# ========================================
+streamlit-webrtc>=0.45.0,<1.0.0
+av>=10.0.0,<11.0.0
+
+# ========================================
+# ADDITIONAL UTILITIES
+# ========================================
+# Database
+sqlite3  # Built-in with Python
+
+# Email
+smtplib  # Built-in with Python
+
+# System utilities
+pathlib  # Built-in with Python
+threading  # Built-in with Python
+time  # Built-in with Python
+datetime  # Built-in with Python
+json  # Built-in with Python
+os  # Built-in with Python
+sys  # Built-in with Python
+traceback  # Built-in with Python
+importlib  # Built-in with Python
+
+# ========================================
+# DEVELOPMENT & TESTING (Optional)
+# ========================================
+# pytest>=7.0.0,<8.0.0
+# black>=23.0.0,<24.0.0
+# flake8>=6.0.0,<7.0.0
+
+# ========================================
+# NOTES
+# ========================================
+# 1. All applications are compatible with these versions
+# 2. For production deployment, consider pinning exact versions
+# 3. Some applications may work with newer versions
+# 4. GPU support: Install torch with CUDA if GPU is available
+# 5. For spaCy: Run 'python -m spacy download en_core_web_sm' after installation

@@ -1,0 +1,62 @@
+# Virtual Environments
+venv/
+venv
+env/
+ENV/
+.venv/
+.env/
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+
+# Model Files and Large Binaries
+*.onnx
+*.pkl
+*.h5
+*.pt
+*.pth
+*.bin
+*.safetensors
+
+# Logs
+*.log
+logs/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Zencoder
+.zencoder/rules
+.zencoder/
+
+# Project Specific
+Meme_Classification_VLM/models/clip/
+vectorstore/
+Demo_files(Test-files)/
+
+# Temporary Files
+*.tmp
+*.temp
+temp/
+tmp/
