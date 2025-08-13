@@ -29,15 +29,19 @@ if str(current_dir) not in sys.path:
     sys.path.insert(0, str(current_dir))
 
 # Import required libraries
+DEMO_MODE = False
 try:
     from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
     import torch
     import numpy as np
     import pandas as pd
 except ImportError as e:
-    st.error(f"❌ Missing required dependencies: {e}")
-    st.info("💡 Please install the required packages: `pip install transformers torch numpy pandas`")
-    st.stop()
+    DEMO_MODE = True
+    st.warning(f"⚠️ Running in demo mode - some dependencies are missing: {e}")
+    st.info("💡 This is a demonstration of the Sentiment Analysis AI interface. Full functionality requires: `pip install transformers torch numpy pandas`")
+    # Import basic alternatives
+    import numpy as np
+    import pandas as pd
 
 # Page configuration (commented out for master app integration)
 # st.set_page_config(
@@ -305,6 +309,18 @@ class SentimentAnalyzer:
     
     def load_model(self):
         """Load sentiment analysis model with fallback options"""
+        global DEMO_MODE
+        
+        if DEMO_MODE:
+            st.info("🎭 Running in demo mode - using simulated sentiment analysis")
+            self.pipeline = None
+            self.model_info = {
+                "type": "Demo Mode",
+                "status": "demo",
+                "note": "Simulated responses for demonstration"
+            }
+            return
+            
         try:
             # Try to load fine-tuned model first
             model_path = Path(__file__).parent / "finetune" / "files" / "backend" / "model"
@@ -336,18 +352,47 @@ class SentimentAnalyzer:
                 st.success("✅ Pre-trained model loaded successfully!")
                 
         except Exception as e:
-            st.error(f"❌ Error loading model: {str(e)}")
+            st.warning(f"⚠️ Could not load AI model: {str(e)}")
+            st.info("🎭 Switching to demo mode with simulated responses")
+            DEMO_MODE = True
+            self.pipeline = None
             self.model_info = {
-                "type": "Error",
+                "type": "Demo Mode (Fallback)",
                 "error": str(e),
-                "status": "failed"
+                "status": "demo"
             }
-            raise e
     
     def analyze_sentiment(self, text):
         """Analyze sentiment of input text"""
-        if not self.pipeline:
-            raise ValueError("Model not loaded")
+        global DEMO_MODE
+        
+        if DEMO_MODE or not self.pipeline:
+            # Demo mode - return simulated results based on simple heuristics
+            text_lower = text.lower()
+            positive_words = ['good', 'great', 'excellent', 'amazing', 'love', 'wonderful', 'fantastic', 'awesome', 'happy', 'best']
+            negative_words = ['bad', 'terrible', 'awful', 'hate', 'worst', 'horrible', 'disappointing', 'sad', 'angry', 'disgusting']
+            
+            positive_count = sum(1 for word in positive_words if word in text_lower)
+            negative_count = sum(1 for word in negative_words if word in text_lower)
+            
+            if positive_count > negative_count:
+                return {
+                    "label": "positive",
+                    "score": 0.85 + (positive_count * 0.05),
+                    "confidence": 85 + (positive_count * 5)
+                }
+            elif negative_count > positive_count:
+                return {
+                    "label": "negative", 
+                    "score": 0.80 + (negative_count * 0.05),
+                    "confidence": 80 + (negative_count * 5)
+                }
+            else:
+                return {
+                    "label": "neutral",
+                    "score": 0.75,
+                    "confidence": 75
+                }
         
         try:
             result = self.pipeline(text)[0]
