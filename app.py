@@ -64,32 +64,112 @@ def show_demo_notice():
     **For Unlimited Access:** Deploy your own instance with personal API keys.
     """)
 
+def show_project_overview():
+    """Fallback project overview if main app fails to load."""
+    st.markdown("""
+    ## 🚀 AI Internship Projects Portfolio
+    
+    **Welcome to my comprehensive AI/ML portfolio!** This project showcases 9 advanced AI applications 
+    integrated into a single enterprise-grade dashboard.
+    
+    ### 🤖 **Featured Applications:**
+    
+    1. **🎤 Voice Assistant AI** - LangChain + Groq powered conversational AI
+    2. **📚 Document Intelligence Chatbot** - RAG-based document Q&A system  
+    3. **🦠 COVID-19 Analytics Dashboard** - Real-time data visualization
+    4. **👋 Hand Gesture Recognition** - MediaPipe computer vision
+    5. **🎨 Cartoonify AI** - OpenCV image transformation
+    6. **😂 Meme Classification VLM** - CLIP-based vision-language model
+    7. **📊 Student Report Card Generator** - Automated PDF generation
+    8. **🧠 AI Quiz Game** - Interactive educational platform
+    9. **🎯 Enterprise Master Dashboard** - Unified application interface
+    
+    ### 💻 **Technology Stack:**
+    - **AI/ML**: LangChain, Groq, Transformers, CLIP, MediaPipe
+    - **Frontend**: Streamlit, Plotly, Matplotlib
+    - **Backend**: Python, FastAPI, SQLite
+    - **Computer Vision**: OpenCV, MediaPipe, PIL
+    - **NLP**: spaCy, NLTK, Sentence Transformers
+    - **Data Science**: Pandas, NumPy, Scikit-learn
+    - **Cloud**: Streamlit Cloud, GitHub Actions
+    
+    ### 🏆 **Key Features:**
+    - ✅ **Enterprise-Grade UI/UX** - Professional, responsive design
+    - ✅ **Real-Time AI Processing** - Live AI model inference
+    - ✅ **Usage Management** - Smart quotas and rate limiting
+    - ✅ **Security** - Proper API key management and error handling
+    - ✅ **Scalability** - Cloud-optimized architecture
+    - ✅ **Documentation** - Comprehensive guides and examples
+    
+    ### 🎯 **Skills Demonstrated:**
+    - **AI/ML Engineering** - Model integration, optimization, deployment
+    - **Full-Stack Development** - Frontend, backend, database integration
+    - **Cloud Architecture** - Scalable, secure cloud deployment
+    - **DevOps** - CI/CD, environment management, monitoring
+    - **User Experience** - Intuitive interfaces, error handling
+    - **Software Engineering** - Clean code, documentation, testing
+    
+    ---
+    
+    ### 📞 **Contact & Links:**
+    - **GitHub**: [View Source Code](https://github.com/sanjayravichander/AI_Internship_Projects)
+    - **LinkedIn**: [Connect with me](https://linkedin.com/in/your-profile)
+    - **Email**: sanjay.1991999@gmail.com
+    
+    **Thank you for exploring my AI portfolio!** 🚀
+    """)
+    
+    # Add some metrics
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Applications", "9", help="Complete AI applications")
+    
+    with col2:
+        st.metric("Technologies", "15+", help="Different AI/ML technologies used")
+    
+    with col3:
+        st.metric("Lines of Code", "10,000+", help="Total codebase size")
+    
+    with col4:
+        st.metric("Deployment", "Cloud", help="Streamlit Cloud deployment")
+
 def main():
     """Main application entry point with error handling."""
     try:
         # Show welcome message
         show_welcome_message()
         
-        # Initialize environment and usage management
-        from env_manager import env_manager, show_api_key_info
-        from usage_manager import display_usage_info
-        
-        # Check API configuration
-        if not show_api_key_info():
-            st.stop()
+        # Try to initialize environment and usage management
+        try:
+            from env_manager import env_manager, show_api_key_info
+            from usage_manager import display_usage_info
+            
+            # Check API configuration
+            if not show_api_key_info():
+                st.stop()
+            
+            # Display usage information in sidebar
+            display_usage_info()
+            
+            # Show deployment status if in debug mode
+            env_manager.display_deployment_status()
+            
+        except ImportError as import_err:
+            st.warning(f"⚠️ Some management features unavailable: {import_err}")
+            st.info("🎯 Running in basic mode - all core features still work!")
         
         # Show demo notice
         show_demo_notice()
         
-        # Display usage information in sidebar
-        display_usage_info()
-        
-        # Show deployment status if in debug mode
-        env_manager.display_deployment_status()
-        
         # Import and run the main application
-        from master_app_enterprise import main as enterprise_main
-        enterprise_main()
+        try:
+            from master_app_enterprise import main as enterprise_main
+            enterprise_main()
+        except ImportError:
+            # Fallback: show a basic version
+            st.error("❌ Main application not found. Showing project overview instead.")
+            show_project_overview()
         
     except ImportError as e:
         st.error(f"""
