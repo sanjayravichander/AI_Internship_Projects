@@ -1,15 +1,59 @@
 # ========================================
-# AI INTERNSHIP PROJECTS - ULTRA MINIMAL FOR STREAMLIT CLOUD
+# AI INTERNSHIP PROJECTS - COMPLETE REQUIREMENTS
 # ========================================
-# Only the most essential packages to get the app running
+# Full functionality with all AI/ML capabilities
 
+# Core Streamlit and data handling
 streamlit
 pandas
 numpy
 plotly
 matplotlib
+seaborn
 requests
 python-dotenv
-beautifulsoup4
+
+# AI/ML Core - Essential for AI applications
+transformers
+torch
+tokenizers
+langchain
+langchain-community
+langchain-groq
+groq
+
+# Computer Vision
+opencv-python-headless
+mediapipe
 pillow
+
+# NLP and Text Processing
+nltk
+textstat
+spacy
+https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
+
+# Document Processing
 PyPDF2
+python-docx
+reportlab
+
+# Data Science and ML
+scikit-learn
+scipy
+networkx
+
+# Vector Search and Embeddings
+faiss-cpu
+sentence-transformers
+
+# Web scraping and utilities
+beautifulsoup4
+python-dateutil
+wordcloud
+
+# Speech Recognition
+speechrecognition
+
+# Additional utilities
+python-multipart
