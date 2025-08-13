@@ -23,6 +23,20 @@ class EnvironmentManager:
         self.deployment_mode = self._detect_deployment_mode()
         self._load_environment()
     
+    def _safe_bool_convert(self, value, default=False):
+        """Safely convert a value to boolean, handling both string and bool types."""
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.lower() in ('true', '1', 'yes', 'on')
+        if value is None:
+            return default
+        # Handle any other type by converting to string first
+        try:
+            return str(value).lower() in ('true', '1', 'yes', 'on')
+        except:
+            return default
+    
     def _detect_deployment_mode(self) -> str:
         """Detect if we're running locally or in cloud deployment."""
         if os.getenv('STREAMLIT_SHARING') or os.getenv('STREAMLIT_CLOUD'):
@@ -226,12 +240,12 @@ class EnvironmentManager:
                 'weather': self.is_feature_enabled('weather'),
                 'huggingface': self.is_feature_enabled('huggingface')
             },
-            'debug_mode': self.get_secret('DEBUG_MODE', 'false').lower() == 'true'
+            'debug_mode': self._safe_bool_convert(self.get_secret('DEBUG_MODE', 'false'))
         }
     
     def display_deployment_status(self):
         """Display deployment status in the sidebar for debugging."""
-        if self.get_secret('DEBUG_MODE', 'false').lower() == 'true':
+        if self._safe_bool_convert(self.get_secret('DEBUG_MODE', 'false')):
             st.sidebar.markdown("---")
             st.sidebar.markdown("### 🔧 Deployment Status")
             

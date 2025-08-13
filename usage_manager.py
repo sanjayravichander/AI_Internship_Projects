@@ -55,13 +55,19 @@ class UsageManager:
         """Initialize session state for usage tracking."""
         ensure_usage_data_initialized()
     
-    def _safe_bool_convert(self, value, default='true'):
+    def _safe_bool_convert(self, value, default=True):
         """Safely convert a value to boolean, handling both string and bool types."""
         if isinstance(value, bool):
             return value
         if isinstance(value, str):
-            return value.lower() == 'true'
-        return str(default).lower() == 'true'
+            return value.lower() in ('true', '1', 'yes', 'on')
+        if value is None:
+            return default
+        # Handle any other type by converting to string first
+        try:
+            return str(value).lower() in ('true', '1', 'yes', 'on')
+        except:
+            return default
     
     def _safe_int_convert(self, value, default):
         """Safely convert a value to integer with fallback."""
@@ -94,8 +100,8 @@ class UsageManager:
                         'email': self._safe_int_convert(st.secrets.get('EMAIL_RATE_LIMIT', 2), 2),
                         'weather': self._safe_int_convert(st.secrets.get('WEATHER_RATE_LIMIT', 10), 10)
                     },
-                    'enable_rate_limiting': self._safe_bool_convert(st.secrets.get('ENABLE_RATE_LIMITING', 'true')),
-                    'graceful_degradation': self._safe_bool_convert(st.secrets.get('GRACEFUL_DEGRADATION', 'true'))
+                    'enable_rate_limiting': self._safe_bool_convert(st.secrets.get('ENABLE_RATE_LIMITING', True)),
+                    'graceful_degradation': self._safe_bool_convert(st.secrets.get('GRACEFUL_DEGRADATION', True))
                 }
             else:
                 # Fallback to environment variables or defaults
@@ -118,8 +124,8 @@ class UsageManager:
                         'email': self._safe_int_convert(os.getenv('EMAIL_RATE_LIMIT', 2), 2),
                         'weather': self._safe_int_convert(os.getenv('WEATHER_RATE_LIMIT', 10), 10)
                     },
-                    'enable_rate_limiting': self._safe_bool_convert(os.getenv('ENABLE_RATE_LIMITING', 'true')),
-                    'graceful_degradation': self._safe_bool_convert(os.getenv('GRACEFUL_DEGRADATION', 'true'))
+                    'enable_rate_limiting': self._safe_bool_convert(os.getenv('ENABLE_RATE_LIMITING', True)),
+                    'graceful_degradation': self._safe_bool_convert(os.getenv('GRACEFUL_DEGRADATION', True))
                 }
         except Exception as e:
             # Use conservative defaults if configuration fails
