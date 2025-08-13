@@ -482,7 +482,8 @@ def main():
         """)
         
         # Show detailed error in debug mode
-        if os.getenv('DEBUG_MODE', 'false').lower() == 'true':
+        debug_mode = os.getenv('DEBUG_MODE', 'false')
+        if str(debug_mode).lower() == 'true':
             st.code(traceback.format_exc())
             
     except Exception as e:
@@ -501,7 +502,8 @@ def main():
         """)
         
         # Show detailed error in debug mode
-        if os.getenv('DEBUG_MODE', 'false').lower() == 'true':
+        debug_mode = os.getenv('DEBUG_MODE', 'false')
+        if str(debug_mode).lower() == 'true':
             st.code(traceback.format_exc())
         
         # Provide fallback information

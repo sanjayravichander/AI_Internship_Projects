@@ -312,7 +312,8 @@ class ApplicationIntegrator:
                 st.error(f"❌ Error executing {app_name}: {str(e)}")
                 
                 # Show detailed error in debug mode
-                if env_manager.get_secret('DEBUG_MODE', 'false').lower() == 'true':
+                debug_mode = env_manager.get_secret('DEBUG_MODE', 'false')
+                if str(debug_mode).lower() == 'true':
                     st.code(traceback.format_exc())
                 
                 return False
@@ -348,5 +349,6 @@ def setup_integrated_environment():
     app_integrator.inject_usage_helpers()
     
     # Display integration status
-    if env_manager.get_secret('DEBUG_MODE', 'false').lower() == 'true':
+    debug_mode = env_manager.get_secret('DEBUG_MODE', 'false')
+    if str(debug_mode).lower() == 'true':
         st.sidebar.success("🔧 Integration: Active")

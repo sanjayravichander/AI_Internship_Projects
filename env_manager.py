@@ -14,6 +14,23 @@ import os
 from typing import Optional, Dict, Any
 import warnings
 
+# Import safe utilities
+try:
+    from safe_utils import safe_bool_convert
+except ImportError:
+    # Fallback function if safe_utils is not available
+    def safe_bool_convert(value, default=False):
+        if value is None:
+            return default
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.lower().strip() in ('true', '1', 'yes', 'on', 'enabled')
+        try:
+            return str(value).lower().strip() in ('true', '1', 'yes', 'on', 'enabled')
+        except:
+            return default
+
 class EnvironmentManager:
     """
     Manages environment variables and API keys securely for different deployment modes.
@@ -25,17 +42,7 @@ class EnvironmentManager:
     
     def _safe_bool_convert(self, value, default=False):
         """Safely convert a value to boolean, handling both string and bool types."""
-        if isinstance(value, bool):
-            return value
-        if isinstance(value, str):
-            return value.lower() in ('true', '1', 'yes', 'on')
-        if value is None:
-            return default
-        # Handle any other type by converting to string first
-        try:
-            return str(value).lower() in ('true', '1', 'yes', 'on')
-        except:
-            return default
+        return safe_bool_convert(value, default)
     
     def _detect_deployment_mode(self) -> str:
         """Detect if we're running locally or in cloud deployment."""

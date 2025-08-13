@@ -17,6 +17,29 @@ from typing import Dict, Any, Optional
 import hashlib
 import os
 
+# Import safe utilities
+try:
+    from safe_utils import safe_bool_convert, safe_int_convert
+except ImportError:
+    # Fallback functions if safe_utils is not available
+    def safe_bool_convert(value, default=False):
+        if value is None:
+            return default
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.lower().strip() in ('true', '1', 'yes', 'on', 'enabled')
+        try:
+            return str(value).lower().strip() in ('true', '1', 'yes', 'on', 'enabled')
+        except:
+            return default
+    
+    def safe_int_convert(value, default=0):
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            return default
+
 # Global function to ensure usage_data is always initialized
 def ensure_usage_data_initialized():
     """Ensure usage_data is initialized in session state - can be called from anywhere."""
@@ -85,24 +108,11 @@ class UsageManager:
     
     def _safe_bool_convert(self, value, default=True):
         """Safely convert a value to boolean, handling both string and bool types."""
-        if isinstance(value, bool):
-            return value
-        if isinstance(value, str):
-            return value.lower() in ('true', '1', 'yes', 'on')
-        if value is None:
-            return default
-        # Handle any other type by converting to string first
-        try:
-            return str(value).lower() in ('true', '1', 'yes', 'on')
-        except:
-            return default
+        return safe_bool_convert(value, default)
     
     def _safe_int_convert(self, value, default):
         """Safely convert a value to integer with fallback."""
-        try:
-            return int(value)
-        except (ValueError, TypeError):
-            return int(default)
+        return safe_int_convert(value, default)
     
     def _load_config(self):
         """Load configuration from Streamlit secrets or environment."""
