@@ -1,21 +1,21 @@
 # ========================================
-# AI INTERNSHIP PROJECTS - MASTER REQUIREMENTS
+# AI INTERNSHIP PROJECTS - STREAMLIT CLOUD OPTIMIZED
 # ========================================
-# Comprehensive dependencies for all 9 AI applications
-# Compatible with Python 3.8+
+# Optimized dependencies for Streamlit Cloud deployment
+# Compatible with Python 3.8+ and cloud environments
 
 # ========================================
 # CORE AI/ML FRAMEWORKS
 # ========================================
 # LangChain ecosystem for AI applications
-langchain>=0.1.0,<0.2.0
-langchain-community>=0.0.13,<0.1.0
-langchain-experimental>=0.0.50,<0.1.0
-langchain-groq>=0.0.1,<0.1.0
-langchain-huggingface>=0.0.1,<0.2.0
+langchain>=0.1.0,<0.3.0
+langchain-community>=0.0.13,<0.3.0
+langchain-experimental>=0.0.50,<0.3.0
+langchain-groq>=0.0.1,<0.2.0
+langchain-huggingface>=0.0.1,<0.3.0
 
 # Large Language Models
-groq>=0.4.1,<1.0.0
+groq>=0.4.1,<2.0.0
 transformers>=4.35.0,<5.0.0
 torch>=2.0.0,<3.0.0
 torchvision>=0.15.0,<1.0.0

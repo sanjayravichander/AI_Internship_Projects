@@ -879,19 +879,31 @@ def create_theme_toggle():
             st.rerun()
 
 def load_application(app_name, config):
-    """Load and execute an application with full functionality"""
+    """Load and execute an application with full functionality and usage management"""
     if config['function'] is None:
         return show_overview()
     
     # Clear the main area
     st.empty()
     
-    # Execute the application
-    return app_runner.execute_app_with_full_features(
-        config['path'],
-        config['file'],
-        app_name
-    )
+    # Import and use our integrator for public deployment
+    try:
+        from app_integrator import execute_app_with_integration
+        
+        # Execute with integration (usage management, environment handling)
+        return execute_app_with_integration(
+            config['path'],
+            config['file'],
+            app_name
+        )
+    except ImportError:
+        # Fallback to original method if integrator is not available
+        st.warning("⚠️ Running in basic mode - some features may be limited")
+        return app_runner.execute_app_with_full_features(
+            config['path'],
+            config['file'],
+            app_name
+        )
 
 def create_performance_chart():
     """Create performance metrics chart"""
@@ -1213,7 +1225,14 @@ def create_enhanced_sidebar():
     return selected_app
 
 def main():
-    """Main application function with enhanced features"""
+    """Main application function with enhanced features and public deployment support"""
+    
+    # Setup integrated environment for public deployment
+    try:
+        from app_integrator import setup_integrated_environment
+        setup_integrated_environment()
+    except ImportError:
+        pass  # Continue without integration if not available
     
     # Create enhanced sidebar
     selected_app = create_enhanced_sidebar()
