@@ -1,9 +1,8 @@
 # ========================================
-# AI INTERNSHIP PROJECTS - STREAMLIT CLOUD MINIMAL
+# AI INTERNSHIP PROJECTS - ULTRA MINIMAL FOR STREAMLIT CLOUD
 # ========================================
-# Essential dependencies only for reliable deployment
+# Only the most essential packages to get the app running
 
-# Core Streamlit and data handling
 streamlit
 pandas
 numpy
@@ -11,21 +10,6 @@ plotly
 matplotlib
 requests
 python-dotenv
-
-# Essential AI/ML (most critical)
-transformers
-torch
-groq
-
-# Computer Vision (lightweight)
-opencv-python-headless
-pillow
-
-# Document processing
-PyPDF2
-
-# Data science basics
-scikit-learn
-
-# Utilities
 beautifulsoup4
+pillow
+PyPDF2
