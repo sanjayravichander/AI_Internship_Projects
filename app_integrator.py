@@ -19,7 +19,7 @@ from typing import Any, Dict, Optional
 import traceback
 
 # Import our management systems
-from usage_manager import usage_manager, check_api_usage, record_api_usage
+from usage_manager import get_usage_manager, check_api_usage, record_api_usage
 from env_manager import env_manager, get_api_key, is_feature_available
 
 class ApplicationIntegrator:

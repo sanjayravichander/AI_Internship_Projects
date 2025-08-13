@@ -14,6 +14,7 @@ import sys
 import os
 from pathlib import Path
 import traceback
+from datetime import datetime
 
 # Configure page FIRST (before any other Streamlit calls)
 st.set_page_config(
@@ -383,7 +384,19 @@ def main():
         # Try to initialize environment and usage management
         try:
             from env_manager import env_manager, show_api_key_info
-            from usage_manager import display_usage_info
+            from usage_manager import display_usage_info, get_usage_manager
+            
+            # Initialize usage data first (defensive initialization)
+            if 'usage_data' not in st.session_state:
+                st.session_state.usage_data = {
+                    'groq_requests': 0,
+                    'openai_requests': 0,
+                    'email_sends': 0,
+                    'weather_requests': 0,
+                    'session_start': datetime.now().isoformat(),
+                    'last_request_times': {},
+                    'total_requests': 0
+                }
             
             # Check API configuration
             show_api_key_info()

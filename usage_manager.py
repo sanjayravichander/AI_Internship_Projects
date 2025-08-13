@@ -48,6 +48,21 @@ class UsageManager:
                 'total_requests': 0
             }
     
+    def _safe_bool_convert(self, value, default='true'):
+        """Safely convert a value to boolean, handling both string and bool types."""
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.lower() == 'true'
+        return str(default).lower() == 'true'
+    
+    def _safe_int_convert(self, value, default):
+        """Safely convert a value to integer with fallback."""
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            return int(default)
+    
     def _load_config(self):
         """Load configuration from Streamlit secrets or environment."""
         try:
@@ -55,49 +70,49 @@ class UsageManager:
             if hasattr(st, 'secrets') and st.secrets:
                 self.config = {
                     'daily_limits': {
-                        'groq': int(st.secrets.get('DAILY_GROQ_REQUESTS', 1000)),
-                        'openai': int(st.secrets.get('DAILY_OPENAI_REQUESTS', 100)),
-                        'email': int(st.secrets.get('DAILY_EMAIL_SENDS', 50)),
-                        'weather': int(st.secrets.get('DAILY_WEATHER_REQUESTS', 500))
+                        'groq': self._safe_int_convert(st.secrets.get('DAILY_GROQ_REQUESTS', 1000), 1000),
+                        'openai': self._safe_int_convert(st.secrets.get('DAILY_OPENAI_REQUESTS', 100), 100),
+                        'email': self._safe_int_convert(st.secrets.get('DAILY_EMAIL_SENDS', 50), 50),
+                        'weather': self._safe_int_convert(st.secrets.get('DAILY_WEATHER_REQUESTS', 500), 500)
                     },
                     'session_limits': {
-                        'groq': int(st.secrets.get('SESSION_GROQ_REQUESTS', 50)),
-                        'openai': int(st.secrets.get('SESSION_OPENAI_REQUESTS', 10)),
-                        'email': int(st.secrets.get('SESSION_EMAIL_SENDS', 5)),
-                        'weather': int(st.secrets.get('SESSION_WEATHER_REQUESTS', 20))
+                        'groq': self._safe_int_convert(st.secrets.get('SESSION_GROQ_REQUESTS', 50), 50),
+                        'openai': self._safe_int_convert(st.secrets.get('SESSION_OPENAI_REQUESTS', 10), 10),
+                        'email': self._safe_int_convert(st.secrets.get('SESSION_EMAIL_SENDS', 5), 5),
+                        'weather': self._safe_int_convert(st.secrets.get('SESSION_WEATHER_REQUESTS', 20), 20)
                     },
                     'rate_limits': {
-                        'groq': int(st.secrets.get('GROQ_RATE_LIMIT', 30)),
-                        'openai': int(st.secrets.get('OPENAI_RATE_LIMIT', 10)),
-                        'email': int(st.secrets.get('EMAIL_RATE_LIMIT', 2)),
-                        'weather': int(st.secrets.get('WEATHER_RATE_LIMIT', 10))
+                        'groq': self._safe_int_convert(st.secrets.get('GROQ_RATE_LIMIT', 30), 30),
+                        'openai': self._safe_int_convert(st.secrets.get('OPENAI_RATE_LIMIT', 10), 10),
+                        'email': self._safe_int_convert(st.secrets.get('EMAIL_RATE_LIMIT', 2), 2),
+                        'weather': self._safe_int_convert(st.secrets.get('WEATHER_RATE_LIMIT', 10), 10)
                     },
-                    'enable_rate_limiting': st.secrets.get('ENABLE_RATE_LIMITING', 'true').lower() == 'true',
-                    'graceful_degradation': st.secrets.get('GRACEFUL_DEGRADATION', 'true').lower() == 'true'
+                    'enable_rate_limiting': self._safe_bool_convert(st.secrets.get('ENABLE_RATE_LIMITING', 'true')),
+                    'graceful_degradation': self._safe_bool_convert(st.secrets.get('GRACEFUL_DEGRADATION', 'true'))
                 }
             else:
                 # Fallback to environment variables or defaults
                 self.config = {
                     'daily_limits': {
-                        'groq': int(os.getenv('DAILY_GROQ_REQUESTS', 1000)),
-                        'openai': int(os.getenv('DAILY_OPENAI_REQUESTS', 100)),
-                        'email': int(os.getenv('DAILY_EMAIL_SENDS', 50)),
-                        'weather': int(os.getenv('DAILY_WEATHER_REQUESTS', 500))
+                        'groq': self._safe_int_convert(os.getenv('DAILY_GROQ_REQUESTS', 1000), 1000),
+                        'openai': self._safe_int_convert(os.getenv('DAILY_OPENAI_REQUESTS', 100), 100),
+                        'email': self._safe_int_convert(os.getenv('DAILY_EMAIL_SENDS', 50), 50),
+                        'weather': self._safe_int_convert(os.getenv('DAILY_WEATHER_REQUESTS', 500), 500)
                     },
                     'session_limits': {
-                        'groq': int(os.getenv('SESSION_GROQ_REQUESTS', 50)),
-                        'openai': int(os.getenv('SESSION_OPENAI_REQUESTS', 10)),
-                        'email': int(os.getenv('SESSION_EMAIL_SENDS', 5)),
-                        'weather': int(os.getenv('SESSION_WEATHER_REQUESTS', 20))
+                        'groq': self._safe_int_convert(os.getenv('SESSION_GROQ_REQUESTS', 50), 50),
+                        'openai': self._safe_int_convert(os.getenv('SESSION_OPENAI_REQUESTS', 10), 10),
+                        'email': self._safe_int_convert(os.getenv('SESSION_EMAIL_SENDS', 5), 5),
+                        'weather': self._safe_int_convert(os.getenv('SESSION_WEATHER_REQUESTS', 20), 20)
                     },
                     'rate_limits': {
-                        'groq': int(os.getenv('GROQ_RATE_LIMIT', 30)),
-                        'openai': int(os.getenv('OPENAI_RATE_LIMIT', 10)),
-                        'email': int(os.getenv('EMAIL_RATE_LIMIT', 2)),
-                        'weather': int(os.getenv('WEATHER_RATE_LIMIT', 10))
+                        'groq': self._safe_int_convert(os.getenv('GROQ_RATE_LIMIT', 30), 30),
+                        'openai': self._safe_int_convert(os.getenv('OPENAI_RATE_LIMIT', 10), 10),
+                        'email': self._safe_int_convert(os.getenv('EMAIL_RATE_LIMIT', 2), 2),
+                        'weather': self._safe_int_convert(os.getenv('WEATHER_RATE_LIMIT', 10), 10)
                     },
-                    'enable_rate_limiting': os.getenv('ENABLE_RATE_LIMITING', 'true').lower() == 'true',
-                    'graceful_degradation': os.getenv('GRACEFUL_DEGRADATION', 'true').lower() == 'true'
+                    'enable_rate_limiting': self._safe_bool_convert(os.getenv('ENABLE_RATE_LIMITING', 'true')),
+                    'graceful_degradation': self._safe_bool_convert(os.getenv('GRACEFUL_DEGRADATION', 'true'))
                 }
         except Exception as e:
             # Use conservative defaults if configuration fails
@@ -120,6 +135,9 @@ class UsageManager:
         Returns:
             Dict with 'allowed', 'reason', 'remaining' keys
         """
+        # Ensure usage_data is initialized
+        self._initialize_session_state()
+        
         current_usage = st.session_state.usage_data.get(f'{service}_requests', 0)
         session_limit = self.config['session_limits'].get(service, 10)
         
@@ -151,6 +169,9 @@ class UsageManager:
     
     def _check_rate_limit(self, service: str) -> bool:
         """Check if the service is within rate limits."""
+        # Ensure usage_data is initialized
+        self._initialize_session_state()
+        
         now = time.time()
         rate_limit = self.config['rate_limits'].get(service, 10)
         
@@ -172,6 +193,9 @@ class UsageManager:
     
     def record_usage(self, service: str, success: bool = True):
         """Record usage of a service."""
+        # Ensure usage_data is initialized
+        self._initialize_session_state()
+        
         if success:
             current_count = st.session_state.usage_data.get(f'{service}_requests', 0)
             st.session_state.usage_data[f'{service}_requests'] = current_count + 1
@@ -179,6 +203,9 @@ class UsageManager:
     
     def get_usage_stats(self) -> Dict[str, Any]:
         """Get current usage statistics."""
+        # Ensure usage_data is initialized
+        self._initialize_session_state()
+        
         usage_data = st.session_state.usage_data
         stats = {
             'session_id': self.session_id,
@@ -252,8 +279,20 @@ class UsageManager:
         total_usage = sum(data['used'] for data in stats['services'].values())
         return total_usage > 20  # Show after significant usage
 
-# Global usage manager instance
-usage_manager = UsageManager()
+# Global usage manager instance (lazy-loaded)
+_usage_manager = None
+
+def get_usage_manager():
+    """Get or create the global usage manager instance."""
+    global _usage_manager
+    if _usage_manager is None:
+        try:
+            _usage_manager = UsageManager()
+        except Exception as e:
+            # If initialization fails, create a minimal fallback
+            st.warning(f"⚠️ Usage manager initialization failed: {e}")
+            _usage_manager = None
+    return _usage_manager
 
 def check_api_usage(service: str) -> bool:
     """
@@ -265,17 +304,25 @@ def check_api_usage(service: str) -> bool:
     Returns:
         bool: True if request is allowed, False otherwise
     """
-    result = usage_manager.check_usage_limit(service)
-    
-    if not result['allowed']:
-        if result['limit_type'] == 'rate':
-            st.warning(f"⏱️ {result['reason']}")
-            time.sleep(1)  # Brief pause for rate limiting
-        else:
-            st.info(usage_manager.get_demo_mode_message(service))
-        return False
-    
-    return True
+    try:
+        usage_manager = get_usage_manager()
+        if usage_manager is None:
+            return True  # Allow requests if usage manager is not available
+            
+        result = usage_manager.check_usage_limit(service)
+        
+        if not result['allowed']:
+            if result['limit_type'] == 'rate':
+                st.warning(f"⏱️ {result['reason']}")
+                time.sleep(1)  # Brief pause for rate limiting
+            else:
+                st.info(usage_manager.get_demo_mode_message(service))
+            return False
+        
+        return True
+    except Exception as e:
+        st.warning(f"⚠️ Usage check error: {e}")
+        return True  # Allow requests if check fails
 
 def record_api_usage(service: str, success: bool = True):
     """
@@ -285,22 +332,35 @@ def record_api_usage(service: str, success: bool = True):
         service: Service name ('groq', 'openai', 'email', 'weather')
         success: Whether the request was successful
     """
-    usage_manager.record_usage(service, success)
+    try:
+        usage_manager = get_usage_manager()
+        if usage_manager is not None:
+            usage_manager.record_usage(service, success)
+    except Exception as e:
+        # Silently fail for usage recording to not break the main functionality
+        pass
 
 def display_usage_info():
     """Display usage information in the sidebar."""
-    usage_manager.display_usage_dashboard()
-    
-    # Show upgrade message if appropriate
-    if usage_manager.should_show_upgrade_message():
-        st.sidebar.markdown("---")
-        st.sidebar.info("""
-        💡 **Want unlimited access?**
-        
-        This is a demo deployment with usage limits. For unlimited access:
-        1. Get your own API keys
-        2. Run locally with your keys
-        3. Deploy your own instance
-        
-        [View Setup Instructions](https://github.com/your-repo)
-        """)
+    try:
+        usage_manager = get_usage_manager()
+        if usage_manager is not None:
+            usage_manager.display_usage_dashboard()
+            
+            # Show upgrade message if appropriate
+            if usage_manager.should_show_upgrade_message():
+                st.sidebar.markdown("---")
+                st.sidebar.info("""
+                💡 **Want unlimited access?**
+                
+                This is a demo deployment with usage limits. For unlimited access:
+                1. Get your own API keys
+                2. Run locally with your keys
+                3. Deploy your own instance
+                
+                [View Setup Instructions](https://github.com/your-repo)
+                """)
+        else:
+            st.sidebar.info("📊 Usage tracking temporarily unavailable")
+    except Exception as e:
+        st.sidebar.warning(f"⚠️ Usage tracking error: {e}")
