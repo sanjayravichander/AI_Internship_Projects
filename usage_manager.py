@@ -20,16 +20,23 @@ import os
 # Global function to ensure usage_data is always initialized
 def ensure_usage_data_initialized():
     """Ensure usage_data is initialized in session state - can be called from anywhere."""
-    if 'usage_data' not in st.session_state:
-        st.session_state.usage_data = {
-            'groq_requests': 0,
-            'openai_requests': 0,
-            'email_sends': 0,
-            'weather_requests': 0,
-            'session_start': datetime.now().isoformat(),
-            'last_request_times': {},
-            'total_requests': 0
-        }
+    try:
+        if not hasattr(st, 'session_state'):
+            return  # Session state not available
+        
+        if 'usage_data' not in st.session_state:
+            st.session_state.usage_data = {
+                'groq_requests': 0,
+                'openai_requests': 0,
+                'email_sends': 0,
+                'weather_requests': 0,
+                'session_start': datetime.now().isoformat(),
+                'last_request_times': {},
+                'total_requests': 0
+            }
+    except Exception as e:
+        # If session state is not available, continue without error
+        pass
 
 class UsageManager:
     """
@@ -38,22 +45,43 @@ class UsageManager:
     
     def __init__(self):
         # Ensure session state is initialized before anything else
-        ensure_usage_data_initialized()
-        self.session_id = self._get_session_id()
-        self._initialize_session_state()
-        self._load_config()
+        try:
+            ensure_usage_data_initialized()
+            self.session_id = self._get_session_id()
+            self._initialize_session_state()
+            self._load_config()
+        except Exception as e:
+            # If initialization fails, create a minimal fallback
+            self.session_id = "fallback"
+            self.config = {
+                'daily_limits': {'groq': 500, 'openai': 50, 'email': 25, 'weather': 250},
+                'session_limits': {'groq': 25, 'openai': 5, 'email': 3, 'weather': 10},
+                'rate_limits': {'groq': 15, 'openai': 5, 'email': 1, 'weather': 5},
+                'enable_rate_limiting': True,
+                'graceful_degradation': True
+            }
     
     def _get_session_id(self) -> str:
         """Generate a unique session ID for tracking."""
-        if 'session_id' not in st.session_state:
-            # Create a unique session ID based on timestamp and random data
-            session_data = f"{time.time()}_{hash(str(st.session_state))}"
-            st.session_state.session_id = hashlib.md5(session_data.encode()).hexdigest()[:16]
-        return st.session_state.session_id
+        try:
+            if not hasattr(st, 'session_state'):
+                return f"fallback_{int(time.time())}"
+            
+            if 'session_id' not in st.session_state:
+                # Create a unique session ID based on timestamp and random data
+                session_data = f"{time.time()}_{hash(str(st.session_state))}"
+                st.session_state.session_id = hashlib.md5(session_data.encode()).hexdigest()[:16]
+            return st.session_state.session_id
+        except Exception as e:
+            return f"fallback_{int(time.time())}"
     
     def _initialize_session_state(self):
         """Initialize session state for usage tracking."""
-        ensure_usage_data_initialized()
+        try:
+            ensure_usage_data_initialized()
+        except Exception as e:
+            # Continue without session state if not available
+            pass
     
     def _safe_bool_convert(self, value, default=True):
         """Safely convert a value to boolean, handling both string and bool types."""

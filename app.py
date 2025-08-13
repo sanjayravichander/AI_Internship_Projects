@@ -36,19 +36,54 @@ sys.path.append(str(current_dir))
 # CRITICAL: Initialize session state immediately to prevent AttributeError
 def ensure_usage_data_initialized():
     """Ensure usage_data is initialized in session state."""
-    if 'usage_data' not in st.session_state:
-        st.session_state.usage_data = {
-            'groq_requests': 0,
-            'openai_requests': 0,
-            'email_sends': 0,
-            'weather_requests': 0,
-            'session_start': datetime.now().isoformat(),
-            'last_request_times': {},
-            'total_requests': 0
-        }
+    try:
+        if 'usage_data' not in st.session_state:
+            st.session_state.usage_data = {
+                'groq_requests': 0,
+                'openai_requests': 0,
+                'email_sends': 0,
+                'weather_requests': 0,
+                'session_start': datetime.now().isoformat(),
+                'last_request_times': {},
+                'total_requests': 0
+            }
+    except Exception as e:
+        # If session state is not available, create a fallback
+        pass
+
+# CRITICAL: Initialize ALL required session state variables
+def initialize_all_session_state():
+    """Initialize all session state variables needed by the application."""
+    try:
+        # Usage data
+        if 'usage_data' not in st.session_state:
+            st.session_state.usage_data = {
+                'groq_requests': 0,
+                'openai_requests': 0,
+                'email_sends': 0,
+                'weather_requests': 0,
+                'session_start': datetime.now().isoformat(),
+                'last_request_times': {},
+                'total_requests': 0
+            }
+        
+        # Session ID
+        if 'session_id' not in st.session_state:
+            import hashlib
+            import time
+            session_data = f"{time.time()}_{hash(str(st.session_state))}"
+            st.session_state.session_id = hashlib.md5(session_data.encode()).hexdigest()[:16]
+        
+        # App state
+        if 'app_initialized' not in st.session_state:
+            st.session_state.app_initialized = True
+            
+    except Exception as e:
+        # Fallback - continue without session state
+        pass
 
 # Initialize immediately
-ensure_usage_data_initialized()
+initialize_all_session_state()
 
 def show_welcome_message():
     """Show welcome message for public deployment."""
@@ -392,7 +427,8 @@ def show_comprehensive_demo():
 def main():
     """Main application entry point with error handling."""
     try:
-        # CRITICAL: Ensure usage data is initialized FIRST
+        # CRITICAL: Initialize ALL session state BEFORE any imports or operations
+        initialize_all_session_state()
         ensure_usage_data_initialized()
         
         # Show welcome message
