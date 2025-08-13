@@ -33,6 +33,23 @@ st.set_page_config(
 current_dir = Path(__file__).parent
 sys.path.append(str(current_dir))
 
+# CRITICAL: Initialize session state immediately to prevent AttributeError
+def ensure_usage_data_initialized():
+    """Ensure usage_data is initialized in session state."""
+    if 'usage_data' not in st.session_state:
+        st.session_state.usage_data = {
+            'groq_requests': 0,
+            'openai_requests': 0,
+            'email_sends': 0,
+            'weather_requests': 0,
+            'session_start': datetime.now().isoformat(),
+            'last_request_times': {},
+            'total_requests': 0
+        }
+
+# Initialize immediately
+ensure_usage_data_initialized()
+
 def show_welcome_message():
     """Show welcome message for public deployment."""
     st.markdown("""
@@ -375,6 +392,9 @@ def show_comprehensive_demo():
 def main():
     """Main application entry point with error handling."""
     try:
+        # CRITICAL: Ensure usage data is initialized FIRST
+        ensure_usage_data_initialized()
+        
         # Show welcome message
         show_welcome_message()
         
@@ -385,18 +405,6 @@ def main():
         try:
             from env_manager import env_manager, show_api_key_info
             from usage_manager import display_usage_info, get_usage_manager
-            
-            # Initialize usage data first (defensive initialization)
-            if 'usage_data' not in st.session_state:
-                st.session_state.usage_data = {
-                    'groq_requests': 0,
-                    'openai_requests': 0,
-                    'email_sends': 0,
-                    'weather_requests': 0,
-                    'session_start': datetime.now().isoformat(),
-                    'last_request_times': {},
-                    'total_requests': 0
-                }
             
             # Check API configuration
             show_api_key_info()

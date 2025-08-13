@@ -17,12 +17,28 @@ from typing import Dict, Any, Optional
 import hashlib
 import os
 
+# Global function to ensure usage_data is always initialized
+def ensure_usage_data_initialized():
+    """Ensure usage_data is initialized in session state - can be called from anywhere."""
+    if 'usage_data' not in st.session_state:
+        st.session_state.usage_data = {
+            'groq_requests': 0,
+            'openai_requests': 0,
+            'email_sends': 0,
+            'weather_requests': 0,
+            'session_start': datetime.now().isoformat(),
+            'last_request_times': {},
+            'total_requests': 0
+        }
+
 class UsageManager:
     """
     Manages API usage, rate limiting, and quotas for public deployment.
     """
     
     def __init__(self):
+        # Ensure session state is initialized before anything else
+        ensure_usage_data_initialized()
         self.session_id = self._get_session_id()
         self._initialize_session_state()
         self._load_config()
@@ -37,16 +53,7 @@ class UsageManager:
     
     def _initialize_session_state(self):
         """Initialize session state for usage tracking."""
-        if 'usage_data' not in st.session_state:
-            st.session_state.usage_data = {
-                'groq_requests': 0,
-                'openai_requests': 0,
-                'email_sends': 0,
-                'weather_requests': 0,
-                'session_start': datetime.now().isoformat(),
-                'last_request_times': {},
-                'total_requests': 0
-            }
+        ensure_usage_data_initialized()
     
     def _safe_bool_convert(self, value, default='true'):
         """Safely convert a value to boolean, handling both string and bool types."""
@@ -305,6 +312,8 @@ def check_api_usage(service: str) -> bool:
         bool: True if request is allowed, False otherwise
     """
     try:
+        # Ensure session state is initialized
+        ensure_usage_data_initialized()
         usage_manager = get_usage_manager()
         if usage_manager is None:
             return True  # Allow requests if usage manager is not available
@@ -333,6 +342,8 @@ def record_api_usage(service: str, success: bool = True):
         success: Whether the request was successful
     """
     try:
+        # Ensure session state is initialized
+        ensure_usage_data_initialized()
         usage_manager = get_usage_manager()
         if usage_manager is not None:
             usage_manager.record_usage(service, success)
@@ -343,6 +354,8 @@ def record_api_usage(service: str, success: bool = True):
 def display_usage_info():
     """Display usage information in the sidebar."""
     try:
+        # Ensure session state is initialized
+        ensure_usage_data_initialized()
         usage_manager = get_usage_manager()
         if usage_manager is not None:
             usage_manager.display_usage_dashboard()

@@ -10,25 +10,26 @@ from datetime import datetime
 def test_session_state_fix():
     """Test that session state is properly initialized."""
     
-    st.title("🧪 Session State Fix Test")
+    st.title("🧪 Session State Fix Test - ENHANCED VERSION")
+    
+    # Test 0: Check if usage_data exists before any operations
+    st.subheader("Test 0: Pre-Import Session State Check")
+    if 'usage_data' in st.session_state:
+        st.success("✅ usage_data already exists in session state!")
+        st.json(st.session_state.usage_data)
+    else:
+        st.warning("⚠️ usage_data not found - will be initialized")
     
     # Test 1: Direct initialization (as done in app.py)
     st.subheader("Test 1: Direct Initialization")
     try:
-        if 'usage_data' not in st.session_state:
-            st.session_state.usage_data = {
-                'groq_requests': 0,
-                'openai_requests': 0,
-                'email_sends': 0,
-                'weather_requests': 0,
-                'session_start': datetime.now().isoformat(),
-                'last_request_times': {},
-                'total_requests': 0
-            }
-        st.success("✅ Direct initialization successful")
+        from usage_manager import ensure_usage_data_initialized
+        ensure_usage_data_initialized()
+        st.success("✅ ensure_usage_data_initialized() successful")
         st.json(st.session_state.usage_data)
     except Exception as e:
         st.error(f"❌ Direct initialization failed: {e}")
+        st.code(str(e))
     
     # Test 2: Usage manager import and initialization
     st.subheader("Test 2: Usage Manager Import")

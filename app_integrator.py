@@ -213,7 +213,7 @@ class ApplicationIntegrator:
         
         # Add environment manager
         builtins.env_manager = env_manager
-        builtins.usage_manager = usage_manager
+        builtins.usage_manager = get_usage_manager()
     
     def create_safe_execution_environment(self, app_path: Path) -> Dict[str, Any]:
         """Create a safe execution environment for applications."""
