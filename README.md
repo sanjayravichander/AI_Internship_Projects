@@ -8,9 +8,6 @@
 
 > **🌟 A comprehensive portfolio of 9 advanced AI applications integrated into a single enterprise-grade dashboard. Perfect for showcasing AI/ML engineering skills to potential employers and the LinkedIn community.**
 
-## 🎯 **Live Demo**
-**👉 [Try it now: https://your-app-name.streamlit.app](https://your-app-name.streamlit.app)**
-
 *Experience all 9 AI applications with real-time processing and professional UI/UX design.*
 
 ## 🎯 Project Overview
