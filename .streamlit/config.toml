@@ -1,38 +1,37 @@
-[global]
-# Streamlit Cloud Configuration for Public Deployment
-developmentMode = false
-showWarningOnDirectExecution = false
-
 [server]
-# Server configuration for Render deployment
+# Server configuration for both local and Render deployment
 headless = true
-enableCORS = false
-enableXsrfProtection = false
+address = "0.0.0.0"
+port = 8501
+
+# Session management
 maxUploadSize = 200
 maxMessageSize = 200
-port = 8501
-address = "0.0.0.0"
+
+# Connection settings
+enableCORS = false
+enableXsrfProtection = false
+enableWebsocketCompression = true
+
+# Performance settings
+runOnSave = false
+allowRunOnSave = false
 
 [browser]
-# Browser configuration
+# Browser settings
 gatherUsageStats = false
+serverAddress = "localhost"
+serverPort = 8501
 
-[theme]
-# Default theme (users can still toggle)
-primaryColor = "#007bff"
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f8f9fa"
-textColor = "#2c3e50"
-font = "sans serif"
-
-[runner]
-# Runner configuration for better performance
-magicEnabled = true
-postScriptGC = true
-fastReruns = true
-enforceSerializableSessionState = false
+[client]
+# Client-side settings for better performance
+showErrorDetails = true
 
 [logger]
 # Logging configuration
 level = "info"
 messageFormat = "%(asctime)s %(message)s"
+
+[theme]
+# Theme settings
+base = "light"

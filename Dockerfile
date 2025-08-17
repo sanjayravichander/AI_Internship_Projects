@@ -62,7 +62,10 @@ exec streamlit run master_app_enterprise.py \\\n\
   --server.headless=true \\\n\
   --server.enableCORS=false \\\n\
   --server.enableXsrfProtection=false \\\n\
-  --server.maxUploadSize=200\n\
+  --server.maxUploadSize=200 \\\n\
+  --server.maxMessageSize=200 \\\n\
+  --server.enableWebsocketCompression=true \\\n\
+  --browser.gatherUsageStats=false\n\
 ' > /app/start.sh && chmod +x /app/start.sh
 
 # Expose port (Render will override this)
@@ -74,6 +77,10 @@ ENV STREAMLIT_SERVER_HEADLESS=true
 ENV STREAMLIT_SERVER_ENABLE_CORS=false
 ENV STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=false
 ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+ENV STREAMLIT_SERVER_MAX_UPLOAD_SIZE=200
+ENV STREAMLIT_SERVER_MAX_MESSAGE_SIZE=200
+ENV STREAMLIT_SERVER_ENABLE_WEBSOCKET_COMPRESSION=true
+
 
 # Run the application
 CMD ["/app/start.sh"]

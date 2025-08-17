@@ -38,9 +38,34 @@ st.set_page_config(
     }
 )
 
-# Initialize session state for theme
+# Initialize session state for theme and session management
 if 'theme' not in st.session_state:
     st.session_state.theme = 'light'
+
+# Session management for Render deployment
+if 'session_id' not in st.session_state:
+    import uuid
+    st.session_state.session_id = str(uuid.uuid4())
+
+# Memory management - Clear old session data
+def cleanup_session():
+    """Clean up session state to prevent memory issues"""
+    keys_to_keep = ['theme', 'session_id', 'selected_app']
+    keys_to_remove = [key for key in st.session_state.keys() if key not in keys_to_keep]
+    for key in keys_to_remove:
+        del st.session_state[key]
+
+# Add session timeout handling
+if 'last_activity' not in st.session_state:
+    st.session_state.last_activity = time.time()
+
+# Check for session timeout (30 minutes)
+current_time = time.time()
+if current_time - st.session_state.last_activity > 1800:  # 30 minutes
+    cleanup_session()
+    st.session_state.last_activity = current_time
+else:
+    st.session_state.last_activity = current_time
 
 # Enterprise-grade CSS with sophisticated styling
 def load_css():
