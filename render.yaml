@@ -1,9 +1,11 @@
 services:
   - type: web
     name: ai-internship-dashboard
-    env: docker
+    runtime: docker
     plan: free
-    dockerfilePath: ./Dockerfile
+    buildCommand: ""
+    startCommand: ""
+    healthCheckPath: /?health=check
     envVars:
       - key: GROQ_API_KEY
         sync: false
@@ -18,8 +20,8 @@ services:
       - key: GOOGLE_API_KEY
         sync: false
       - key: STREAMLIT_SERVER_HEADLESS
-        value: true
+        value: "true"
       - key: STREAMLIT_SERVER_ENABLE_CORS
-        value: false
+        value: "false"
       - key: STREAMLIT_BROWSER_GATHER_USAGE_STATS
-        value: false
+        value: "false"
