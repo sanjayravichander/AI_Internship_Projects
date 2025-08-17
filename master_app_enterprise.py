@@ -47,25 +47,50 @@ if 'session_id' not in st.session_state:
     import uuid
     st.session_state.session_id = str(uuid.uuid4())
 
-# Memory management - Clear old session data
+# Aggressive memory management for Render free tier
+import gc
+import psutil
+import os
+
 def cleanup_session():
-    """Clean up session state to prevent memory issues"""
-    keys_to_keep = ['theme', 'session_id', 'selected_app']
+    """Aggressive cleanup for memory optimization"""
+    keys_to_keep = ['theme', 'session_id', 'selected_app', 'last_activity']
     keys_to_remove = [key for key in st.session_state.keys() if key not in keys_to_keep]
     for key in keys_to_remove:
         del st.session_state[key]
+    
+    # Force garbage collection
+    gc.collect()
 
-# Add session timeout handling
+def check_memory_usage():
+    """Monitor memory usage and cleanup if needed"""
+    try:
+        process = psutil.Process(os.getpid())
+        memory_mb = process.memory_info().rss / 1024 / 1024
+        
+        # If memory usage > 400MB (80% of 512MB limit), aggressive cleanup
+        if memory_mb > 400:
+            cleanup_session()
+            gc.collect()
+            return True
+        return False
+    except:
+        return False
+
+# Add session timeout handling (reduced to 10 minutes for memory)
 if 'last_activity' not in st.session_state:
     st.session_state.last_activity = time.time()
 
-# Check for session timeout (30 minutes)
+# Check for session timeout (10 minutes instead of 30)
 current_time = time.time()
-if current_time - st.session_state.last_activity > 1800:  # 30 minutes
+if current_time - st.session_state.last_activity > 600:  # 10 minutes
     cleanup_session()
     st.session_state.last_activity = current_time
 else:
     st.session_state.last_activity = current_time
+
+# Check memory usage every request
+check_memory_usage()
 
 # Enterprise-grade CSS with sophisticated styling
 def load_css():
@@ -1326,25 +1351,56 @@ def main():
     
     # Health check endpoint for Render
     if st.query_params.get("health") == "check":
-        st.success("✅ AI Internship Dashboard is running successfully!")
-        st.json({
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat(),
-            "version": "3.0.0",
-            "applications": len(APPLICATIONS)
-        })
+        try:
+            process = psutil.Process(os.getpid())
+            memory_mb = process.memory_info().rss / 1024 / 1024
+            cpu_percent = process.cpu_percent()
+            
+            st.success("✅ AI Internship Dashboard is running successfully!")
+            st.json({
+                "status": "healthy",
+                "timestamp": datetime.now().isoformat(),
+                "version": "3.0.0",
+                "applications": len(APPLICATIONS),
+                "memory_mb": round(memory_mb, 2),
+                "cpu_percent": round(cpu_percent, 2),
+                "memory_limit": "512MB (Render Free Tier)"
+            })
+        except:
+            st.success("✅ AI Internship Dashboard is running successfully!")
+            st.json({
+                "status": "healthy",
+                "timestamp": datetime.now().isoformat(),
+                "version": "3.0.0",
+                "applications": len(APPLICATIONS)
+            })
         return
     
     # Create enhanced sidebar
     selected_app = create_enhanced_sidebar()
     
-    # System info with enhanced styling
+    # System info with enhanced styling and memory monitoring
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🖥️ System Information")
     st.sidebar.markdown(f"**Python:** {sys.version.split()[0]}")
     st.sidebar.markdown(f"**Streamlit:** {st.__version__}")
     st.sidebar.markdown(f"**Theme:** {st.session_state.theme.title()}")
     st.sidebar.markdown(f"**Time:** {datetime.now().strftime('%H:%M:%S')}")
+    
+    # Memory monitoring for Render
+    try:
+        process = psutil.Process(os.getpid())
+        memory_mb = process.memory_info().rss / 1024 / 1024
+        memory_percent = (memory_mb / 512) * 100  # 512MB limit on Render free tier
+        
+        if memory_percent > 80:
+            st.sidebar.error(f"🚨 **Memory:** {memory_mb:.1f}MB ({memory_percent:.1f}%)")
+        elif memory_percent > 60:
+            st.sidebar.warning(f"⚠️ **Memory:** {memory_mb:.1f}MB ({memory_percent:.1f}%)")
+        else:
+            st.sidebar.success(f"✅ **Memory:** {memory_mb:.1f}MB ({memory_percent:.1f}%)")
+    except:
+        st.sidebar.info("**Memory:** Monitoring unavailable")
     
     # Enhanced load button
     st.sidebar.markdown("---")

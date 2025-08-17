@@ -1,4 +1,4 @@
-# 🚀 AI Internship Projects - Render Deployment
+# 🚀 AI Internship Projects - Memory Optimized for Render
 FROM python:3.10-slim
 
 # Set working directory
@@ -71,15 +71,19 @@ exec streamlit run master_app_enterprise.py \\\n\
 # Expose port (Render will override this)
 EXPOSE 8501
 
-# Set environment variables for Render
+# Set environment variables for Render - Memory Optimized
 ENV PYTHONPATH=/app
 ENV STREAMLIT_SERVER_HEADLESS=true
 ENV STREAMLIT_SERVER_ENABLE_CORS=false
 ENV STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=false
 ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
-ENV STREAMLIT_SERVER_MAX_UPLOAD_SIZE=200
-ENV STREAMLIT_SERVER_MAX_MESSAGE_SIZE=200
+ENV STREAMLIT_SERVER_MAX_UPLOAD_SIZE=50
+ENV STREAMLIT_SERVER_MAX_MESSAGE_SIZE=50
 ENV STREAMLIT_SERVER_ENABLE_WEBSOCKET_COMPRESSION=true
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV MALLOC_TRIM_THRESHOLD_=100000
+ENV MALLOC_MMAP_THRESHOLD_=100000
 
 
 # Run the application
