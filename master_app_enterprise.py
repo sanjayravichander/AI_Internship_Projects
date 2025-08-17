@@ -1299,6 +1299,17 @@ def create_enhanced_sidebar():
 def main():
     """Main application function with enhanced features"""
     
+    # Health check endpoint for Render
+    if st.query_params.get("health") == "check":
+        st.success("✅ AI Internship Dashboard is running successfully!")
+        st.json({
+            "status": "healthy",
+            "timestamp": datetime.now().isoformat(),
+            "version": "3.0.0",
+            "applications": len(APPLICATIONS)
+        })
+        return
+    
     # Create enhanced sidebar
     selected_app = create_enhanced_sidebar()
     
