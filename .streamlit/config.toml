@@ -1,37 +1,19 @@
 [server]
-# Server configuration for both local and Render deployment
 headless = true
-address = "0.0.0.0"
-port = 8501
-
-# Session management - Memory Optimized
-maxUploadSize = 50
-maxMessageSize = 50
-
-# Connection settings
 enableCORS = false
 enableXsrfProtection = false
-enableWebsocketCompression = true
-
-# Performance settings
-runOnSave = false
-allowRunOnSave = false
+maxUploadSize = 200
+port = 8080
 
 [browser]
-# Browser settings
 gatherUsageStats = false
-serverAddress = "localhost"
-serverPort = 8501
-
-[client]
-# Client-side settings for better performance
-showErrorDetails = true
-
-[logger]
-# Logging configuration
-level = "info"
-messageFormat = "%(asctime)s %(message)s"
 
 [theme]
-# Theme settings
 base = "light"
+primaryColor = "#007bff"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f8f9fa"
+textColor = "#2c3e50"
+
+[client]
+showErrorDetails = false

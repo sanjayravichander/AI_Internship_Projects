@@ -77,6 +77,26 @@ def check_memory_usage():
     except:
         return False
 
+def is_heavy_application(app_name):
+    """Check if application is memory-intensive"""
+    heavy_apps = [
+        "📚 Document Intelligence Chatbot",
+        "😂 Meme Classification VLM", 
+        "🤖 Voice Assistant 2.0",
+        "🎨 Cartoonify AI"
+    ]
+    return app_name in heavy_apps
+
+def get_memory_status():
+    """Get current memory status"""
+    try:
+        process = psutil.Process(os.getpid())
+        memory_mb = process.memory_info().rss / 1024 / 1024
+        memory_percent = (memory_mb / 512) * 100
+        return memory_mb, memory_percent
+    except:
+        return 0, 0
+
 # Add session timeout handling (reduced to 10 minutes for memory)
 if 'last_activity' not in st.session_state:
     st.session_state.last_activity = time.time()
@@ -1004,7 +1024,53 @@ def create_theme_toggle():
             st.rerun()
 
 def load_application(app_name, config):
-    """Load and execute an application with full functionality"""
+    """Load and execute an application with memory checks"""
+    
+    # Check memory before loading heavy applications
+    memory_mb, memory_percent = get_memory_status()
+    
+    if is_heavy_application(app_name):
+        st.warning(f"⚠️ **Memory-Intensive Application Detected**")
+        st.info(f"Current Memory Usage: {memory_mb:.1f}MB ({memory_percent:.1f}% of 512MB limit)")
+        
+        # If memory is already high, show warning and offer alternatives
+        if memory_percent > 70:
+            st.error(f"""
+            🚨 **High Memory Usage Warning**
+            
+            Current memory usage is {memory_percent:.1f}% of the 512MB Render limit.
+            Loading this heavy application may cause a crash.
+            
+            **Recommendations:**
+            1. 🔄 Refresh the page to clear memory
+            2. 🏠 Return to overview and try a lighter application first
+            3. ⏰ Wait a few minutes for automatic cleanup
+            4. 💰 Consider upgrading to Render's paid plan (1GB RAM)
+            """)
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                if st.button("🔄 Refresh Page", type="primary"):
+                    st.rerun()
+            with col2:
+                if st.button("🏠 Return to Overview"):
+                    st.session_state.current_app = "🎯 Project Overview"
+                    st.rerun()
+            with col3:
+                if st.button("⚠️ Load Anyway", help="Risk of crash"):
+                    pass  # Continue to load
+                else:
+                    return  # Don't load the application
+        
+        # Force cleanup before loading heavy app
+        cleanup_session()
+        st.info("🧹 Performed memory cleanup before loading application...")
+        
+        # For very high memory usage, show lightweight demo instead
+        if memory_percent > 85:
+            show_lightweight_demo(app_name, config)
+            return
+    
     if config['function'] is None:
         # For applications without custom functions, load directly using file execution
         # Clear the main area
@@ -1026,6 +1092,131 @@ def load_application(app_name, config):
         config['file'],
         app_name
     )
+
+def show_lightweight_demo(app_name, config):
+    """Show a lightweight demo version for memory-intensive applications"""
+    st.error("🚨 **Memory Limit Reached - Showing Demo Mode**")
+    st.info("This is a lightweight demonstration due to Render's 512MB memory limit.")
+    
+    if app_name == "📚 Document Intelligence Chatbot":
+        st.markdown("""
+        ### 📚 Document Intelligence Chatbot - Demo Mode
+        
+        **What this application normally does:**
+        - Upload and process PDF, DOCX, TXT files
+        - Semantic search using FAISS vector database
+        - Entity extraction with spaCy NLP
+        - Knowledge graph generation
+        - Advanced analytics dashboard
+        
+        **Demo Features:**
+        """)
+        
+        # Simple demo interface
+        st.text_area("📄 Sample Document Content", 
+                    "This is a sample document about artificial intelligence and machine learning...", 
+                    height=100, disabled=True)
+        
+        sample_question = st.text_input("❓ Ask a question about the document:", 
+                                       placeholder="What is artificial intelligence?")
+        
+        if sample_question:
+            st.success("🤖 **AI Response:** Artificial intelligence is a branch of computer science that aims to create intelligent machines capable of performing tasks that typically require human intelligence.")
+        
+        st.info("💡 **To use the full version:** Upgrade to Render's paid plan or run locally")
+        
+    elif app_name == "😂 Meme Classification VLM":
+        st.markdown("""
+        ### 😂 Meme Classification VLM - Demo Mode
+        
+        **What this application normally does:**
+        - Upload and analyze meme images
+        - CLIP vision-language model classification
+        - AI-powered explanations using Groq LLM
+        - Sentiment analysis and meme understanding
+        
+        **Demo Features:**
+        """)
+        
+        # Show sample meme analysis
+        st.image("https://via.placeholder.com/300x200/FF6B6B/FFFFFF?text=Sample+Meme", 
+                caption="Sample Meme (Placeholder)")
+        
+        st.success("🎯 **Classification:** Funny/Relatable")
+        st.info("😄 **Sentiment:** Positive, Humorous")
+        st.write("🤖 **AI Explanation:** This appears to be a relatable meme format commonly used to express everyday situations...")
+        
+        st.info("💡 **To use the full version:** Upgrade to Render's paid plan or run locally")
+        
+    elif app_name == "🤖 Voice Assistant 2.0":
+        st.markdown("""
+        ### 🤖 Voice Assistant 2.0 - Demo Mode
+        
+        **What this application normally does:**
+        - LiveKit integration for real-time voice
+        - Web mode and console mode operation
+        - System control and application launching
+        - Natural conversation with memory
+        
+        **Demo Features:**
+        """)
+        
+        # Simple text-based demo
+        user_input = st.text_input("💬 Type your message to the assistant:", 
+                                  placeholder="Hello, how are you?")
+        
+        if user_input:
+            st.success("🤖 **Assistant:** Hello! I'm doing well, thank you for asking. In full mode, I can help with voice commands, system control, and much more!")
+        
+        st.info("💡 **To use the full version:** Upgrade to Render's paid plan or run locally")
+        
+    elif app_name == "🎨 Cartoonify AI":
+        st.markdown("""
+        ### 🎨 Cartoonify AI - Demo Mode
+        
+        **What this application normally does:**
+        - Transform images into cartoon-style artwork
+        - Video processing with AI filters
+        - Multiple art styles (AnimeGAN, etc.)
+        - Batch processing capabilities
+        
+        **Demo Features:**
+        """)
+        
+        # Show before/after example
+        col1, col2 = st.columns(2)
+        with col1:
+            st.image("https://via.placeholder.com/200x200/4ECDC4/FFFFFF?text=Original", 
+                    caption="Original Image (Sample)")
+        with col2:
+            st.image("https://via.placeholder.com/200x200/FF6B6B/FFFFFF?text=Cartoonified", 
+                    caption="Cartoonified Result (Sample)")
+        
+        st.info("💡 **To use the full version:** Upgrade to Render's paid plan or run locally")
+    
+    # Common upgrade message
+    st.markdown("---")
+    st.markdown("""
+    ### 💰 **Upgrade Options**
+    
+    **Option 1: Render Paid Plan**
+    - Upgrade to Render Starter ($7/month)
+    - Get 1GB RAM instead of 512MB
+    - Run all applications without memory limits
+    
+    **Option 2: Run Locally**
+    - Clone the repository
+    - Install dependencies: `pip install -r requirements.txt`
+    - Run: `streamlit run master_app_enterprise.py`
+    
+    **Option 3: Use Individual Apps**
+    - Each application can be run separately
+    - Lower memory usage per application
+    """)
+    
+    if st.button("🏠 Return to Overview"):
+        st.session_state.current_app = "🎯 Project Overview"
+        st.rerun()
 
 def create_performance_chart():
     """Create performance metrics chart"""
@@ -1182,10 +1373,16 @@ def show_overview():
     # Display filtered applications
     for i, (app_name, config) in enumerate(filtered_apps.items()):
         with st.container():
+            # Add memory warning for heavy applications
+            memory_warning = ""
+            if is_heavy_application(app_name):
+                memory_warning = '<span style="color: #fbbf24; font-size: 0.75rem;">⚠️ Memory Intensive</span><br>'
+            
             st.markdown(f"""
             <div class="enterprise-card fade-in-up">
                 <h3>{app_name}</h3>
                 <p>{config['description']}</p>
+                {memory_warning}
                 
                 <div class="tech-stack">
                     <strong>🛠️ Tech Stack:</strong> {config['tech_stack']}

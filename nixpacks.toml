@@ -1,0 +1,30 @@
+[phases.setup]
+nixPkgs = [
+  "python310",
+  "pip",
+  "gcc",
+  "glib",
+  "libGL",
+  "libgcc",
+  "stdenv.cc.cc.lib",
+  "zlib",
+  "libffi",
+  "openssl",
+  "portaudio",
+  "alsa-lib",
+  "poppler_utils"
+]
+
+[phases.install]
+cmds = [
+  "pip install --upgrade pip",
+  "pip install -r requirements.txt",
+  "python -m spacy download en_core_web_sm || echo 'spaCy model download failed, will retry at runtime'",
+  "python setup.py || echo 'Setup script completed with warnings'"
+]
+
+[phases.build]
+cmds = ["echo 'Build phase completed'"]
+
+[start]
+cmd = "streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true --server.enableCORS false --server.enableXsrfProtection false"
