@@ -3,7 +3,10 @@ import hashlib
 from dotenv import load_dotenv
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
+try:
+    from langchain_huggingface import HuggingFaceEmbeddings
+except ImportError:
+    from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_groq import ChatGroq
 from langchain.chains import RetrievalQA
@@ -24,6 +27,54 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # Suppress TensorFlow warnings
 from dotenv import load_dotenv
 dotenv_path = os.getenv("ENV_PATH", os.path.join(os.path.dirname(__file__), "..", ".env"))
 load_dotenv(dotenv_path=dotenv_path)
+
+# Try to import streamlit for caching, fallback if not available
+try:
+    import streamlit as st
+    
+    @st.cache_resource
+    def get_cached_embeddings():
+        """Get cached embeddings model to avoid re-downloading"""
+        try:
+            print("🔄 Loading Jina AI embeddings (cached)...")
+            embed_model = HuggingFaceEmbeddings(
+                model_name="jinaai/jina-embeddings-v3",
+                model_kwargs={'device': 'cpu', 'trust_remote_code': True},
+                encode_kwargs={'normalize_embeddings': True}
+            )
+            print("✅ Jina AI embeddings loaded successfully!")
+            return embed_model
+        except Exception as e:
+            print(f"⚠️ Jina AI embeddings failed: {e}")
+            print("🔄 Falling back to BGE embeddings (cached)...")
+            embed_model = HuggingFaceEmbeddings(
+                model_name="BAAI/bge-small-en-v1.5",
+                model_kwargs={'device': 'cpu'},
+                encode_kwargs={'normalize_embeddings': True}
+            )
+            print("✅ BGE embeddings loaded successfully!")
+            return embed_model
+    
+    STREAMLIT_AVAILABLE = True
+except ImportError:
+    STREAMLIT_AVAILABLE = False
+    
+    def get_cached_embeddings():
+        """Fallback embeddings loader when Streamlit is not available"""
+        try:
+            embed_model = HuggingFaceEmbeddings(
+                model_name="jinaai/jina-embeddings-v3",
+                model_kwargs={'device': 'cpu', 'trust_remote_code': True},
+                encode_kwargs={'normalize_embeddings': True}
+            )
+            return embed_model
+        except Exception:
+            embed_model = HuggingFaceEmbeddings(
+                model_name="BAAI/bge-small-en-v1.5",
+                model_kwargs={'device': 'cpu'},
+                encode_kwargs={'normalize_embeddings': True}
+            )
+            return embed_model
 
 class AgenticDocumentQAChatbot:
     def __init__(self, pdf_path, vectorstore_base_path=None, force_recreate=False):
@@ -143,24 +194,8 @@ class AgenticDocumentQAChatbot:
         """Create embeddings and vector store"""
         print("Creating embeddings and vector store...")
         
-        # Try Jina embeddings first, fallback to BGE if it fails
-        try:
-            print("🔄 Attempting to use Jina AI embeddings...")
-            embed_model = HuggingFaceEmbeddings(
-                model_name="jinaai/jina-embeddings-v3",
-                model_kwargs={'device': 'cpu', 'trust_remote_code': True},
-                encode_kwargs={'normalize_embeddings': True}
-            )
-            print("✅ Jina AI embeddings loaded successfully!")
-        except Exception as e:
-            print(f"⚠️ Jina AI embeddings failed: {e}")
-            print("🔄 Falling back to BGE embeddings...")
-            embed_model = HuggingFaceEmbeddings(
-                model_name="BAAI/bge-small-en-v1.5",
-                model_kwargs={'device': 'cpu'},
-                encode_kwargs={'normalize_embeddings': True}
-            )
-            print("✅ BGE embeddings loaded successfully!")
+        # Use cached embeddings to avoid re-downloading
+        embed_model = get_cached_embeddings()
         
         # Create FAISS vector store
         vectorstore = FAISS.from_documents(docs, embed_model)
@@ -174,19 +209,8 @@ class AgenticDocumentQAChatbot:
     def load_existing_vectorstore(self):
         """Load existing vector store if available"""
         try:
-            # Try Jina embeddings first, fallback to BGE if it fails
-            try:
-                embed_model = HuggingFaceEmbeddings(
-                    model_name="jinaai/jina-embeddings-v3",
-                    model_kwargs={'device': 'cpu', 'trust_remote_code': True},
-                    encode_kwargs={'normalize_embeddings': True}
-                )
-            except Exception:
-                embed_model = HuggingFaceEmbeddings(
-                    model_name="BAAI/bge-small-en-v1.5",
-                    model_kwargs={'device': 'cpu'},
-                    encode_kwargs={'normalize_embeddings': True}
-                )
+            # Use cached embeddings to avoid re-downloading
+            embed_model = get_cached_embeddings()
             
             vectorstore = FAISS.load_local(
                 self.vectorstore_path, 
@@ -626,16 +650,51 @@ class AgenticDocumentQAChatbot:
         if not self.advanced_analyzer:
             return "Advanced analyzer not available"
         
+        if not self.vectorstore:
+            return "Document not loaded. Please upload and initialize a document first."
+        
         try:
-            # Get comprehensive document content
-            retriever = self.vectorstore.as_retriever(
-                search_type="mmr",
-                search_kwargs={"k": 20, "lambda_mult": 0.5}
-            )
+            # Get comprehensive document content - use simple similarity search first
+            retriever = self.vectorstore.as_retriever(search_kwargs={"k": 20})
             docs = retriever.get_relevant_documents("summary overview main points key findings")
+            
+            if not docs:
+                # Fallback: try different search terms
+                docs = retriever.get_relevant_documents("content text document information")
+            
+            if not docs:
+                # Final fallback: get any documents with empty query
+                docs = retriever.get_relevant_documents("the")
+            
+            if not docs:
+                # Last resort: try to get documents directly from vectorstore
+                try:
+                    # Get all documents if possible
+                    all_docs = self.vectorstore.similarity_search("", k=20)
+                    docs = all_docs
+                except:
+                    pass
+            
+            if not docs:
+                return "No documents available for summary. Please ensure the document was properly uploaded and processed."
+            
             text = "\n\n".join([doc.page_content for doc in docs])
             
-            return self.advanced_analyzer.generate_executive_summary(text, summary_type)
+            if not text.strip():
+                return "No text content found in the document for summary generation."
+            
+            # Generate summary using advanced analyzer
+            summary_result = self.advanced_analyzer.generate_executive_summary(text, summary_type)
+            
+            # Handle case where summary result is a dict (error case)
+            if isinstance(summary_result, dict):
+                if "error" in summary_result:
+                    return f"Summary generation failed: {summary_result['error']}"
+                else:
+                    return f"Unexpected response format: {summary_result}"
+            
+            return summary_result
+            
         except Exception as e:
             return f"Error generating summary: {str(e)}"
     
@@ -645,7 +704,40 @@ class AgenticDocumentQAChatbot:
             return {"error": "Smart search not available"}
         
         try:
-            return self.smart_search.semantic_search(query, search_type)
+            # Use the vectorstore-based semantic search method
+            if not self.vectorstore:
+                return {"error": "Vectorstore not available for search"}
+            
+            # Adjust search parameters based on search type
+            if search_type == "precise":
+                search_kwargs = {"k": 3}
+            elif search_type == "exploratory":
+                search_kwargs = {"k": 10}
+            else:  # comprehensive
+                search_kwargs = {"k": 6}
+            
+            # Perform search using vectorstore
+            retriever = self.vectorstore.as_retriever(search_kwargs=search_kwargs)
+            docs = retriever.get_relevant_documents(query)
+            
+            # Format results
+            results = []
+            for i, doc in enumerate(docs):
+                results.append({
+                    "rank": i + 1,
+                    "content": doc.page_content,
+                    "metadata": doc.metadata,
+                    "relevance_score": round(1.0 - (i * 0.1), 2)  # Simple scoring
+                })
+            
+            return {
+                "status": "success",
+                "query": query,
+                "search_type": search_type,
+                "total_results": len(results),
+                "results": results
+            }
+            
         except Exception as e:
             return {"error": f"Error in semantic search: {str(e)}"}
     
@@ -1078,6 +1170,168 @@ class AgenticDocumentQAChatbot:
                     print(f"📚 (Based on {response['sources']} relevant document sections)")
             
             print()  # Add blank line for readability
+
+
+
+    def get_document_insights(self):
+        """Get comprehensive document insights"""
+        try:
+            insights = {}
+            
+            # Get document text
+            if hasattr(self, 'documents') and self.documents:
+                full_text = "\n".join([doc.page_content for doc in self.documents])
+            else:
+                # Fallback: get text from vectorstore
+                retriever = self.vectorstore.as_retriever(search_kwargs={"k": 50})
+                docs = retriever.get_relevant_documents("document content text analysis")
+                full_text = "\n".join([doc.page_content for doc in docs])
+            
+            # Basic document information
+            insights["basic_info"] = {
+                "total_pages": getattr(self, 'document_metadata', {}).get('total_pages', 1),
+                "total_content_length": len(full_text),
+                "document_name": getattr(self, 'document_metadata', {}).get('document_name', 'Unknown')
+            }
+            
+            # Use advanced analyzer if available
+            if self.advanced_analyzer:
+                # Complexity analysis
+                insights["complexity_analysis"] = self.advanced_analyzer.analyze_document_complexity(full_text)
+                
+                # Document classification
+                insights["document_classification"] = self.advanced_analyzer.classify_document_type(full_text)
+                
+                # Key entities extraction
+                insights["key_entities"] = self.advanced_analyzer.extract_key_entities(full_text)
+            else:
+                # Fallback implementations
+                insights["complexity_analysis"] = {"error": "Advanced analyzer not available"}
+                insights["document_classification"] = {"error": "Advanced analyzer not available"}
+                insights["key_entities"] = {"error": "Advanced analyzer not available"}
+            
+            # Citations and references
+            if self.smart_search:
+                insights["citations_references"] = self.smart_search.find_citations_and_references(full_text)
+            else:
+                insights["citations_references"] = {"error": "Smart search not available"}
+                
+            return insights
+            
+        except Exception as e:
+            return {"error": f"Analysis error: {str(e)}"}
+
+    def _classify_document(self, text: str):
+        """Classify document type"""
+        try:
+            # Simple classification based on content patterns
+            text_lower = text.lower()
+            
+            if any(word in text_lower for word in ["research", "study", "methodology", "results", "conclusion"]):
+                doc_type = "Research Paper"
+                confidence = "High"
+                reasoning = "Contains typical research paper sections and terminology"
+            elif any(word in text_lower for word in ["contract", "agreement", "terms", "conditions", "party"]):
+                doc_type = "Legal Document"
+                confidence = "High"
+                reasoning = "Contains legal terminology and contract language"
+            elif any(word in text_lower for word in ["manual", "instructions", "guide", "how to", "step"]):
+                doc_type = "Manual/Guide"
+                confidence = "Medium"
+                reasoning = "Contains instructional content and procedural language"
+            elif any(word in text_lower for word in ["report", "analysis", "findings", "summary", "executive"]):
+                doc_type = "Business Report"
+                confidence = "Medium"
+                reasoning = "Contains business and analytical terminology"
+            else:
+                doc_type = "General Document"
+                confidence = "Low"
+                reasoning = "No specific document type patterns detected"
+            
+            return {
+                "document_type": doc_type,
+                "confidence": confidence,
+                "reasoning": reasoning
+            }
+            
+        except Exception as e:
+            return {"error": f"Classification error: {str(e)}"}
+
+    def _analyze_reading_level(self, text: str):
+        """Analyze reading level of the document"""
+        try:
+            words = text.split()
+            sentences = text.split('.')
+            
+            if len(sentences) == 0 or len(words) == 0:
+                return {"grade_level": 0, "reading_level": "Unknown"}
+            
+            avg_sentence_length = len(words) / len(sentences)
+            avg_word_length = sum(len(word) for word in words) / len(words)
+            
+            # Simple reading level calculation
+            if avg_sentence_length < 10 and avg_word_length < 4:
+                grade_level = "Elementary (3-5)"
+                grade_num = 4
+            elif avg_sentence_length < 15 and avg_word_length < 5:
+                grade_level = "Middle School (6-8)"
+                grade_num = 7
+            elif avg_sentence_length < 20 and avg_word_length < 6:
+                grade_level = "High School (9-12)"
+                grade_num = 10
+            else:
+                grade_level = "College Level (13+)"
+                grade_num = 14
+            
+            return {
+                "grade_level": grade_num,
+                "reading_level": grade_level,
+                "avg_sentence_length": round(avg_sentence_length, 1),
+                "avg_word_length": round(avg_word_length, 1)
+            }
+            
+        except Exception as e:
+            return {"grade_level": 0, "reading_level": "Unknown", "error": str(e)}
+
+    def _extract_key_entities(self, text: str):
+        """Extract key entities from the document"""
+        try:
+            # Simple entity extraction using common patterns
+            import re
+            
+            entities = {
+                "people": [],
+                "organizations": [],
+                "locations": [],
+                "dates": [],
+                "numbers": []
+            }
+            
+            # Extract potential names (capitalized words)
+            names = re.findall(r'\b[A-Z][a-z]+ [A-Z][a-z]+\b', text)
+            entities["people"] = list(set(names[:10]))  # Top 10 unique names
+            
+            # Extract organizations (words ending with common org suffixes)
+            orgs = re.findall(r'\b[A-Z][a-zA-Z]*(?: [A-Z][a-zA-Z]*)*(?:\s+(?:Inc|Corp|LLC|Ltd|Company|Organization|Institute|University|College))\b', text)
+            entities["organizations"] = list(set(orgs[:10]))
+            
+            # Extract dates
+            dates = re.findall(r'\b(?:\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{4}|\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4})\b', text)
+            entities["dates"] = list(set(dates[:10]))
+            
+            # Extract numbers and percentages
+            numbers = re.findall(r'\b\d+(?:\.\d+)?%?\b', text)
+            entities["numbers"] = list(set(numbers[:10]))
+            
+            return {
+                "total_entities": sum(len(v) for v in entities.values()),
+                "entities": entities
+            }
+            
+        except Exception as e:
+            return {"total_entities": 0, "entities": {}, "error": str(e)}
+
+
 
 def main():
     """Main function to run the agentic chatbot"""

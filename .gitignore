@@ -162,8 +162,7 @@ debug_*
 Demo_files(Test-files)/
 Demo_App(files)/
 
-# Voice Assistant backup
-Voice_Assistant(2.0)/
+# Voice Assistant backup (removed - now tracking Voice_Assistant(2.0))
 
 # Environment files
 .env.example

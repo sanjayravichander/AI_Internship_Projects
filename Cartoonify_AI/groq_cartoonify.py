@@ -67,7 +67,9 @@ def load_animegan_model(show_messages=True):
         return None
     
     try:
-        model_path = Path("AnimeGANv3_Hayao_STYLE_36.onnx")
+        # Get the directory where this script is located
+        script_dir = Path(__file__).parent
+        model_path = script_dir / "AnimeGANv3_Hayao_STYLE_36.onnx"
         
         # Check if model exists
         if not model_path.exists():
