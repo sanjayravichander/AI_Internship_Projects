@@ -835,12 +835,12 @@ APPLICATIONS = {
         "last_updated": "2024-01-15"
     },
     "🤖 Voice Assistant 2.0": {
-        "description": "Advanced AI assistant Alice with optimized LiveKit integration, fast startup, and intelligent command processing capabilities",
+        "description": "Next-generation voice assistant with LiveKit integration and dual operation modes. 🌐 Web Mode (LiveKit Playground): Natural conversation, web search, information retrieval, web applications. 💻 Console Mode (Local Terminal): Full system control, application launching, volume control, screenshots. Environment-aware AI that adapts functionality based on execution context.",
         "function": None,
         "path": "Voice_Assistant(2.0)",
         "file": "voice_assistant_launcher.py",
-        "tech_stack": "LiveKit Agents • Google LLM & TTS • System Control • Fast Startup • Web Integration",
-        "features": ["Voice Conversation", "LiveKit Integration", "System Commands", "App Launcher", "Weather Info", "Web Search", "Screenshot Capture", "Fast Startup"],
+        "tech_stack": "LiveKit Agents • Google LLM & TTS • System Integration • Web APIs",
+        "features": ["Dual Mode Operation", "🌐 Web Mode: Natural conversation, web search, information retrieval", "💻 Console Mode: Full system control, application launching, volume control", "Real-time voice conversation", "Intelligent system control", "Web integration", "Contextual memory"],
         "status": "ready",
         "category": "AI Assistant",
         "complexity": "High",
