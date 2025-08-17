@@ -104,9 +104,8 @@ python-dotenv>=1.0.0,<2.0.0
 # ========================================
 # TRANSLATION & INTERNATIONALIZATION
 # ========================================
-googletrans==4.0.0-rc1
-# OR (recommended for stability):
-# deep-translator>=1.11.4,<2.0.0
+# googletrans==4.0.0-rc1  # Removed due to httpx conflict with groq
+deep-translator>=1.11.4,<2.0.0
 
 # ========================================
 # NETWORK ANALYSIS
@@ -122,11 +121,11 @@ gensim>=4.3.0,<5.0.0
 # VIDEO PROCESSING (Optional)
 # ========================================
 streamlit-webrtc>=0.45.0,<1.0.0
-av>=10.0.0,<11.0.0
+av>=14.0.0,<15.0.0
 
 # ========================================
 # ADDITIONAL UTILITIES
 # ========================================
 pyaudio>=0.2.11,<1.0.0
-psutil>=5.9.0,<6.0.0
+psutil>=7.0.0,<8.0.0
 protobuf>=4.25.3,<5.0.0

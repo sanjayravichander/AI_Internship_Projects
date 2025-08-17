@@ -16,7 +16,6 @@ address = "0.0.0.0"
 [browser]
 # Browser configuration
 gatherUsageStats = false
-showErrorDetails = false
 
 [theme]
 # Default theme (users can still toggle)
@@ -26,17 +25,9 @@ secondaryBackgroundColor = "#f8f9fa"
 textColor = "#2c3e50"
 font = "sans serif"
 
-[client]
-# Client configuration
-caching = true
-displayEnabled = true
-showErrorDetails = false
-
 [runner]
 # Runner configuration for better performance
 magicEnabled = true
-installTracer = false
-fixMatplotlib = true
 postScriptGC = true
 fastReruns = true
 enforceSerializableSessionState = false
@@ -45,7 +36,3 @@ enforceSerializableSessionState = false
 # Logging configuration
 level = "info"
 messageFormat = "%(asctime)s %(message)s"
-
-[deprecation]
-# Handle deprecation warnings
-showPyplotGlobalUse = false
