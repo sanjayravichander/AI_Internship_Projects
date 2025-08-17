@@ -558,10 +558,15 @@ class EnterpriseAppRunner:
     """Advanced application runner with enterprise-grade features"""
     
     def __init__(self):
-        # Use current working directory or script directory for portability
-        self.base_path = Path(__file__).parent.resolve()
+        # Ensure we always use the correct absolute path
+        self.base_path = Path(__file__).parent.absolute()
         self.loaded_modules = {}
         self.performance_metrics = {}
+        
+        # Verify the base path exists
+        if not self.base_path.exists():
+            st.error(f"❌ Base path does not exist: {self.base_path}")
+            st.info("💡 Please ensure the application is running from the correct directory.")
         
     def execute_app_with_full_features(self, app_path, app_file, app_name):
         """Execute application with full features and performance monitoring"""
@@ -570,8 +575,24 @@ class EnterpriseAppRunner:
         try:
             full_path = self.base_path / app_path / app_file
             
+            # Debug information (only show if there's an error)
+            # st.info(f"🔍 Looking for: {full_path}")
+            
             if not full_path.exists():
                 st.error(f"❌ Application file not found: {full_path}")
+                
+                # Check if the directory exists
+                app_dir = full_path.parent
+                if app_dir.exists():
+                    st.info(f"📁 Directory exists: {app_dir}")
+                    files_in_dir = list(app_dir.glob("*.py"))
+                    if files_in_dir:
+                        st.info(f"🔍 Python files found: {[f.name for f in files_in_dir]}")
+                    else:
+                        st.warning("⚠️ No Python files found in the directory")
+                else:
+                    st.error(f"❌ Directory does not exist: {app_dir}")
+                
                 self._show_file_suggestions(app_path, app_file)
                 return False
             
@@ -580,9 +601,10 @@ class EnterpriseAppRunner:
             if app_dir not in sys.path:
                 sys.path.insert(0, app_dir)
             
-            # Change working directory temporarily
+            # Store original working directory but don't change it
             original_cwd = os.getcwd()
-            os.chdir(full_path.parent)
+            # Comment out the directory change to avoid path issues
+            # os.chdir(full_path.parent)
             
             try:
                 # Show loading with progress
@@ -613,10 +635,11 @@ class EnterpriseAppRunner:
                 progress_bar.progress(75)
                 time.sleep(0.3)
                 
-                # Create execution namespace
+                # Create execution namespace with enhanced imports for Voice Assistant
                 namespace = {
                     '__name__': '__main__',
                     '__file__': str(full_path),
+                    '__builtins__': __builtins__,  # Allow imports and built-in functions
                     'st': st,
                     'os': os,
                     'sys': sys,
@@ -628,6 +651,52 @@ class EnterpriseAppRunner:
                     'importlib': importlib,
                     're': re,
                 }
+                
+                # Add additional imports that Voice Assistant needs
+                try:
+                    import subprocess
+                    namespace['subprocess'] = subprocess
+                except ImportError:
+                    pass
+                
+                try:
+                    import threading
+                    namespace['threading'] = threading
+                except ImportError:
+                    pass
+                
+                try:
+                    import requests
+                    namespace['requests'] = requests
+                except ImportError:
+                    pass
+                
+                try:
+                    from dotenv import load_dotenv
+                    namespace['load_dotenv'] = load_dotenv
+                except ImportError:
+                    pass
+                
+                # Try to import psutil and make it available in the namespace
+                try:
+                    import psutil
+                    namespace['psutil'] = psutil
+                except ImportError:
+                    # Create a mock psutil for graceful fallback
+                    class MockPsutil:
+                        @staticmethod
+                        def Process(pid):
+                            class MockProcess:
+                                def cpu_percent(self):
+                                    return 0.0
+                                def memory_info(self):
+                                    class MockMemInfo:
+                                        rss = 0
+                                    return MockMemInfo()
+                                def status(self):
+                                    return "running"
+                            return MockProcess()
+                    namespace['psutil'] = MockPsutil()
                 
                 # Execute the application code
                 exec(content, namespace)
@@ -657,9 +726,13 @@ class EnterpriseAppRunner:
                 error_str = str(e).lower()
                 
                 # Don't show error popup for certain harmless errors
-                if ('no such file or directory' in error_str and 'master_app' in error_str) or \
-                   ('scriptruncontext' in error_str):
+                if ('scriptruncontext' in error_str):
                     return False
+                
+                # Log file path errors for debugging but don't suppress them
+                if 'no such file or directory' in error_str and 'master_app' in error_str:
+                    st.warning(f"⚠️ Navigation issue detected: {str(e)}")
+                    st.info("💡 This might be a temporary issue. Try refreshing the page or selecting the app again.")
                 
                 self._show_error_details(app_name, e)
                 
@@ -674,8 +747,8 @@ class EnterpriseAppRunner:
                 return False
                 
             finally:
-                # Restore original working directory
-                os.chdir(original_cwd)
+                # Working directory restoration not needed since we don't change it
+                pass
                 
         except Exception as e:
             st.error(f"❌ Critical error loading {app_name}: {str(e)}")
@@ -748,8 +821,9 @@ app_runner = EnterpriseAppRunner()
 
 # Enhanced application configurations
 APPLICATIONS = {
+    
     "🎯 Project Overview": {
-        "description": "Welcome to the AI Internship Projects Enterprise Dashboard - showcasing 10 advanced AI applications with enterprise-grade quality",
+        "description": "Welcome to the AI Internship Projects Enterprise Dashboard - showcasing 9 advanced AI applications with enterprise-grade quality",
         "function": None,
         "path": None,
         "file": None,
@@ -760,17 +834,17 @@ APPLICATIONS = {
         "complexity": "High",
         "last_updated": "2024-01-15"
     },
-    "🤖 Voice Assistant AI": {
-        "description": "Advanced conversational AI assistant powered by LangChain and Groq LLM with specialized tools for calculations, emails, reminders, and intelligent web search",
-        "function": "run_voice_assistant",
-        "path": "Voice_Assistant_AI",
-        "file": "voice_app_simple.py",
-        "tech_stack": "LangChain • Groq LLM • Speech Recognition • Text-to-Speech • SQLite • Email Integration",
-        "features": ["Voice Commands", "Email Automation", "Smart Reminders", "Advanced Calculator", "Weather Updates", "Web Search", "Memory System"],
+    "🤖 Voice Assistant 2.0": {
+        "description": "Next-generation voice assistant with LiveKit integration and dual operation modes. 🌐 Web Mode (LiveKit Playground): Natural conversation, web search, information retrieval, web applications. 💻 Console Mode (Local Terminal): Full system control, application launching, volume control, screenshots. Environment-aware AI that adapts functionality based on execution context.",
+        "function": None,
+        "path": "Voice_Assistant(2.0)",
+        "file": "voice_assistant_launcher.py",
+        "tech_stack": "LiveKit Agents • Google LLM & TTS • System Integration • Web APIs",
+        "features": ["Dual Mode Operation", "🌐 Web Mode: Natural conversation, web search, information retrieval", "💻 Console Mode: Full system control, application launching, volume control", "Real-time voice conversation", "Intelligent system control", "Web integration", "Contextual memory"],
         "status": "ready",
-        "category": "Conversational AI",
+        "category": "AI Assistant",
         "complexity": "High",
-        "last_updated": "2024-01-14"
+        "last_updated": "2024-01-18"
     },
     "📚 Document Intelligence Chatbot": {
         "description": "Enterprise-grade document Q&A system with agentic AI capabilities, semantic search, entity extraction, and advanced analytics dashboard",
@@ -880,31 +954,28 @@ def create_theme_toggle():
             st.rerun()
 
 def load_application(app_name, config):
-    """Load and execute an application with full functionality and usage management"""
+    """Load and execute an application with full functionality"""
     if config['function'] is None:
-        return show_overview()
-    
-    # Clear the main area
-    st.empty()
-    
-    # Import and use our integrator for public deployment
-    try:
-        from app_integrator import execute_app_with_integration
+        # For applications without custom functions, load directly using file execution
+        # Clear the main area
+        st.empty()
         
-        # Execute with integration (usage management, environment handling)
-        return execute_app_with_integration(
-            config['path'],
-            config['file'],
-            app_name
-        )
-    except ImportError:
-        # Fallback to original method if integrator is not available
-        st.warning("⚠️ Running in basic mode - some features may be limited")
+        # Execute the application
         return app_runner.execute_app_with_full_features(
             config['path'],
             config['file'],
             app_name
         )
+    
+    # Clear the main area
+    st.empty()
+    
+    # Execute the application
+    return app_runner.execute_app_with_full_features(
+        config['path'],
+        config['file'],
+        app_name
+    )
 
 def create_performance_chart():
     """Create performance metrics chart"""
@@ -950,7 +1021,7 @@ def show_overview():
     st.markdown("""
     <div class="enterprise-header fade-in-up">
         <h1>🚀 AI Internship Projects</h1>
-        <p class="subtitle">Enterprise Master Dashboard - Showcasing 10 Advanced AI Applications</p>
+        <p class="subtitle">Enterprise Master Dashboard - Showcasing 9 Advanced AI Applications</p>
         <div class="version-badge">Version 3.0.0 - Enterprise Edition</div>
     </div>
     """, unsafe_allow_html=True)
@@ -959,7 +1030,7 @@ def show_overview():
     st.markdown("""
     <div class="metrics-grid fade-in-up">
         <div class="metric-card">
-            <h2>10</h2>
+            <h2>9</h2>
             <p>AI Applications</p>
         </div>
         <div class="metric-card">
@@ -992,7 +1063,7 @@ def show_overview():
         st.markdown("""
         ## 🎯 Project Portfolio Overview
         
-        Welcome to my comprehensive AI internship project portfolio! This enterprise-grade dashboard showcases **10 advanced AI applications** 
+        Welcome to my comprehensive AI internship project portfolio! This enterprise-grade dashboard showcases **9 advanced AI applications** 
         built using cutting-edge technologies including **LangChain**, **Groq LLM**, **Computer Vision**, **NLP**, and **Machine Learning**.
         
         Each application demonstrates different aspects of AI/ML engineering, from conversational AI to computer vision, 
@@ -1226,14 +1297,7 @@ def create_enhanced_sidebar():
     return selected_app
 
 def main():
-    """Main application function with enhanced features and public deployment support"""
-    
-    # Setup integrated environment for public deployment
-    try:
-        from app_integrator import setup_integrated_environment
-        setup_integrated_environment()
-    except ImportError:
-        pass  # Continue without integration if not available
+    """Main application function with enhanced features"""
     
     # Create enhanced sidebar
     selected_app = create_enhanced_sidebar()

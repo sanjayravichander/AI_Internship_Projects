@@ -36,11 +36,14 @@ This repository contains a comprehensive collection of **9 production-ready AI a
 
 ## 🚀 Applications Portfolio
 
-### 1. 🤖 Voice Assistant AI
-**Advanced AI assistant with LangChain, Groq LLM, and specialized tools**
-- **Tech Stack**: LangChain, Groq, Speech Recognition, TTS, SQLite
-- **Features**: Voice Commands, Email Sending, Reminders, Calculator, Weather, Web Search
-- **Highlights**: Agentic AI system with memory and tool integration
+### 1. 🎤 Voice Assistant 2.0 - Dual Mode AI
+**Next-generation voice assistant with LiveKit integration and dual operation modes**
+- **Tech Stack**: LiveKit Agents, Google LLM & TTS, System Integration, Web APIs
+- **Dual Mode Operation**:
+  - **🌐 Web Mode (LiveKit Playground)**: Natural conversation, web search, information retrieval, web applications
+  - **💻 Console Mode (Local Terminal)**: Full system control, application launching, volume control, screenshots
+- **Features**: Real-time voice conversation, intelligent system control, web integration, contextual memory
+- **Highlights**: Environment-aware AI that adapts functionality based on execution context
 
 ### 2. 📚 Document Intelligence Chatbot
 **Enterprise-grade document Q&A system with agentic AI capabilities**
@@ -163,7 +166,7 @@ WEATHER_API_KEY=your_weather_api_key_here
 
 6. **Run the Master Dashboard**
 ```bash
-streamlit run app.py
+streamlit run master_app_enterprise.py
 ```
 
 The application will open in your browser at `http://localhost:8501`
@@ -172,15 +175,18 @@ The application will open in your browser at `http://localhost:8501`
 
 ```
 AI_Internship_Projects/
-├── app.py                          # 🚀 Master Dashboard (Main Entry Point)
+├── master_app_enterprise.py       # 🚀 Master Dashboard (Main Entry Point)
 ├── requirements.txt                # 📦 Comprehensive Dependencies
 ├── README.md                       # 📖 This Documentation
 ├── .env                           # 🔐 Environment Variables (create this)
 ├── .gitignore                     # 🚫 Git Ignore Rules
 │
-├── Voice_Assistant_AI/            # 🤖 Voice Assistant Application
-│   ├── voice_app_simple.py       # Main application file
-│   └── assistant_memory.db       # SQLite database
+├── Voice_Assistant(2.0)/          # 🎤 Advanced Voice Assistant with LiveKit
+│   ├── agent.py                   # Main LiveKit agent
+│   ├── tools_simple.py            # AI tools and system integration
+│   ├── prompts_2.py               # AI personality and instructions
+│   ├── config.py                  # Configuration settings
+│   └── voice_assistant_launcher.py # Streamlit launcher interface
 │
 ├── Chatbot_AI/                   # 📚 Document Intelligence Chatbot
 │   ├── app.py                    # Main Streamlit app
@@ -234,6 +240,55 @@ AI_Internship_Projects/
 2. **Modular Architecture**: Applications are designed for easy integration and modification
 3. **Extensible Design**: Easy to add new applications to the master dashboard
 4. **Production Ready**: Built with error handling, logging, and scalability in mind
+
+## 🎤 Voice Assistant 2.0 - Special Usage Instructions
+
+### 🌐 Web Mode (Recommended for Demo)
+**Access through Master Dashboard → Voice Assistant 2.0**
+```bash
+streamlit run master_app_enterprise.py
+# Navigate to Voice Assistant 2.0 → Launch LiveKit Playground
+```
+
+**Capabilities in Web Mode:**
+- ✅ **Natural Voice Conversation**: Speak directly with Alice AI
+- ✅ **Web Search & Information**: "What's the weather in London?"
+- ✅ **Web Applications**: "Open WhatsApp" → Opens WhatsApp Web
+- ✅ **YouTube Integration**: "Play music videos"
+- ✅ **Email Assistance**: Get help with communication
+- ❌ **System Control**: Limited due to browser security (explained to user)
+
+### 💻 Console Mode (Full System Access)
+**For complete system integration and control**
+```bash
+cd Voice_Assistant(2.0)
+python agent.py
+```
+
+**Additional Capabilities in Console Mode:**
+- ✅ **Everything from Web Mode PLUS:**
+- ✅ **System Applications**: "Open calculator", "Open notepad"
+- ✅ **Volume Control**: "Increase volume", "Mute"
+- ✅ **Screenshots**: "Take a screenshot"
+- ✅ **System Commands**: Full Windows system integration
+
+### 🔧 Environment Setup for Voice Assistant 2.0
+```env
+# Required for LiveKit integration
+GOOGLE_API_KEY=your_google_api_key_here
+LIVEKIT_URL=your_livekit_url_here
+LIVEKIT_API_KEY=your_livekit_api_key_here
+LIVEKIT_API_SECRET=your_livekit_api_secret_here
+
+# Optional for enhanced features
+GMAIL_USER=your_email@gmail.com
+GMAIL_APP_PASSWORD=your_app_password_here
+```
+
+### 🎯 Demo Recommendations
+- **For Interviews/Showcasing**: Use Web Mode via Master Dashboard
+- **For Technical Deep Dive**: Demonstrate Console Mode capabilities
+- **For System Integration**: Show dual-mode environment detection
 
 ## 🔧 Configuration & Customization
 

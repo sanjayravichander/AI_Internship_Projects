@@ -388,23 +388,42 @@ class AdvancedCOVIDDashboard:
         with tab1:
             st.subheader("📊 Key Metrics Overview")
             
-            # Calculate key metrics
-            total_cases = filtered_df['Positive'].max() if not filtered_df.empty else 0
-            total_tests = filtered_df['TotalSamples'].max() if not filtered_df.empty else 0
-            avg_positivity = filtered_df['Positivity_Rate'].mean() if not filtered_df.empty else 0
-            peak_daily = filtered_df['Daily_Positive'].max() if not filtered_df.empty else 0
+            # Calculate key metrics based on filtered data
+            if not filtered_df.empty:
+                # Get the latest data for each selected state
+                latest_data = filtered_df.groupby('State').last()
+                
+                # Sum up totals across selected states
+                total_cases = latest_data['Positive'].sum()
+                total_tests = latest_data['TotalSamples'].sum()
+                
+                # Calculate weighted average positivity rate
+                if total_tests > 0:
+                    avg_positivity = (latest_data['Positive'].sum() / total_tests) * 100
+                else:
+                    avg_positivity = 0
+                
+                # Peak daily cases in the filtered period
+                peak_daily = filtered_df['Daily_Positive'].max()
+            else:
+                total_cases = 0
+                total_tests = 0
+                avg_positivity = 0
+                peak_daily = 0
             
-            # Display metrics
+            # Display metrics with context
+            st.info(f"📊 Showing metrics for {len(selected_states)} selected state(s) in the chosen date range")
+            
             col1, col2, col3, col4 = st.columns(4)
             
             with col1:
-                st.metric("Total Cases", f"{total_cases:,.0f}")
+                st.metric("Total Cases", f"{total_cases:,.0f}", help="Sum of latest reported cases for selected states")
             with col2:
-                st.metric("Total Tests", f"{total_tests:,.0f}")
+                st.metric("Total Tests", f"{total_tests:,.0f}", help="Sum of latest reported tests for selected states")
             with col3:
-                st.metric("Avg Positivity Rate", f"{avg_positivity:.2f}%")
+                st.metric("Positivity Rate", f"{avg_positivity:.2f}%", help="Overall positivity rate for selected states")
             with col4:
-                st.metric("Peak Daily Cases", f"{peak_daily:,.0f}")
+                st.metric("Peak Daily Cases", f"{peak_daily:,.0f}", help="Highest single-day cases in the filtered period")
             
             # Interactive timeline
             st.subheader("📈 Interactive Timeline")

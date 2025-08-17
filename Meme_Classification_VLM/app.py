@@ -12,24 +12,52 @@ from dotenv import load_dotenv
 from transformers import CLIPProcessor, CLIPModel
 from groq import Groq
 
-# ---------------------- Load .env from parent folder ----------------------
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.getcwd()), '.env'))
+# ---------------------- Load .env from project root ----------------------
+# Try multiple paths to find the .env file
+env_paths = [
+    os.path.join(os.path.dirname(__file__), '..', '.env'),  # Parent directory
+    os.path.join(os.path.dirname(os.getcwd()), '.env'),     # Original path
+    '.env',  # Current directory
+    os.path.join(os.getcwd(), '.env')  # Current working directory
+]
+
+for env_path in env_paths:
+    if os.path.exists(env_path):
+        load_dotenv(dotenv_path=env_path)
+        break
+else:
+    # If no .env file found, try loading from environment
+    load_dotenv()
+
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # ---------------------- Groq Client Setup ----------------------
+if not GROQ_API_KEY:
+    st.error("❌ GROQ_API_KEY not found! Please check your .env file.")
+    st.info("💡 Make sure the .env file contains: GROQ_API_KEY=your_api_key_here")
+    st.stop()
+
 client = Groq(api_key=GROQ_API_KEY)
 
-# ---------------------- Load CLIP model ----------------------
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model_id = "openai/clip-vit-large-patch14"
+# ---------------------- Load CLIP model with Streamlit caching ----------------------
+@st.cache_resource
+def load_clip_model():
+    """Load CLIP model with Streamlit caching to avoid re-downloading"""
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model_id = "openai/clip-vit-large-patch14"
+    
+    # Use a cache directory for models
+    model_cache_dir = "models/clip"
+    os.makedirs(model_cache_dir, exist_ok=True)
+    
+    # Download and load models (cached by Streamlit)
+    model = CLIPModel.from_pretrained(model_id, cache_dir=model_cache_dir).to(device)
+    processor = CLIPProcessor.from_pretrained(model_id, cache_dir=model_cache_dir)
+    
+    return model, processor, device
 
-# Use a cache directory for models
-model_cache_dir = "models/clip"
-os.makedirs(model_cache_dir, exist_ok=True)
-
-# Download and load models
-model = CLIPModel.from_pretrained(model_id, cache_dir=model_cache_dir).to(device)
-processor = CLIPProcessor.from_pretrained(model_id, cache_dir=model_cache_dir)
+# Load models using cached function
+model, processor, device = load_clip_model()
 
 # ---------------------- Define meme categories ----------------------
 categories = [

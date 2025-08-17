@@ -42,6 +42,7 @@ import base64
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import io
+import hashlib
 
 # Page configuration
 st.set_page_config(
@@ -149,6 +150,10 @@ if 'document_insights' not in st.session_state:
     st.session_state.document_insights = None
 if 'current_tab' not in st.session_state:
     st.session_state.current_tab = "Chat"
+if 'current_file_hash' not in st.session_state:
+    st.session_state.current_file_hash = None
+if 'current_file_name' not in st.session_state:
+    st.session_state.current_file_name = None
 
 def main():
     """Main application function"""
@@ -197,7 +202,11 @@ def main():
             
             if st.button("🔍 Analyze Document"):
                 with st.spinner("Performing advanced analysis..."):
-                    st.session_state.document_insights = st.session_state.chatbot.get_document_insights()
+                    try:
+                        st.session_state.document_insights = st.session_state.chatbot.get_document_insights()
+                        st.success("✅ Document analysis complete!")
+                    except Exception as e:
+                        st.error(f"❌ Analysis error: {str(e)}")
             
             if st.session_state.document_insights:
                 display_sidebar_insights()
@@ -233,6 +242,16 @@ def main():
 def initialize_chatbot(uploaded_file):
     """Initialize the elite chatbot with uploaded document"""
     try:
+        # Check if we already have a chatbot for this file
+        file_hash = hashlib.md5(uploaded_file.getbuffer()).hexdigest()
+        
+        # If we already have this file processed, don't reinitialize
+        if ('current_file_hash' in st.session_state and 
+            st.session_state.current_file_hash == file_hash and
+            st.session_state.chatbot is not None):
+            st.success("🚀 Document already loaded and ready!")
+            return
+        
         # Save uploaded file
         temp_path = f"temp_{uploaded_file.name}"
         with open(temp_path, "wb") as f:
@@ -250,6 +269,10 @@ def initialize_chatbot(uploaded_file):
             temp_path, 
             force_recreate=True
         )
+        
+        # Store file hash to prevent re-initialization
+        st.session_state.current_file_hash = file_hash
+        st.session_state.current_file_name = uploaded_file.name
         
         progress_bar.progress(60)
         status_text.text("🧠 Loading Advanced AI Models...")
@@ -384,6 +407,13 @@ def display_analytics_dashboard():
     
     if not st.session_state.document_insights:
         st.info("📊 Upload a document and run analysis to see the dashboard")
+        
+        # Add button to generate insights if chatbot is available
+        if st.session_state.chatbot:
+            if st.button("🔍 Generate Analytics Dashboard", type="primary"):
+                with st.spinner("Generating comprehensive analytics..."):
+                    st.session_state.document_insights = st.session_state.chatbot.get_document_insights()
+                    st.rerun()
         return
     
     insights = st.session_state.document_insights
@@ -393,36 +423,53 @@ def display_analytics_dashboard():
     
     with col1:
         complexity = insights.get('complexity_analysis', {})
-        st.metric(
-            "Reading Level",
-            complexity.get('complexity_level', 'Unknown'),
-            f"Grade {complexity.get('flesch_kincaid_grade', 0)}"
-        )
+        if 'error' not in complexity:
+            st.metric(
+                "Reading Level",
+                complexity.get('complexity_level', 'Unknown'),
+                f"Grade {complexity.get('flesch_kincaid_grade', 0)}"
+            )
+        else:
+            st.metric("Reading Level", "Error", "Analysis failed")
     
     with col2:
         basic_info = insights.get('basic_info', {})
-        st.metric(
-            "Document Pages",
-            basic_info.get('total_pages', 0),
-            f"{basic_info.get('total_content_length', 0):,} chars"
-        )
+        if 'error' not in basic_info:
+            st.metric(
+                "Document Pages",
+                basic_info.get('total_pages', 0),
+                f"{basic_info.get('total_content_length', 0):,} chars"
+            )
+        else:
+            st.metric("Document Pages", "Error", "Info unavailable")
     
     with col3:
         entities = insights.get('key_entities', {})
-        total_entities = sum(len(v) for v in entities.values() if isinstance(v, list))
-        st.metric(
-            "Key Entities",
-            total_entities,
-            "Extracted"
-        )
+        if 'error' not in entities:
+            # Handle both old and new entity format
+            if 'entities' in entities:
+                entity_data = entities['entities']
+                total_entities = sum(len(v) for v in entity_data.values() if isinstance(v, list))
+            else:
+                total_entities = entities.get('total_entities', 0)
+            st.metric(
+                "Key Entities",
+                total_entities,
+                "Extracted"
+            )
+        else:
+            st.metric("Key Entities", "Error", "Extraction failed")
     
     with col4:
         classification = insights.get('document_classification', {})
-        st.metric(
-            "Document Type",
-            classification.get('document_type', 'Unknown')[:15],
-            classification.get('confidence', 'Low')
-        )
+        if 'error' not in classification:
+            st.metric(
+                "Document Type",
+                classification.get('document_type', 'Unknown')[:15],
+                classification.get('confidence', 'Low')
+            )
+        else:
+            st.metric("Document Type", "Error", "Classification failed")
     
     # Complexity analysis chart
     if 'complexity_analysis' in insights and 'error' not in insights['complexity_analysis']:
@@ -464,7 +511,14 @@ def display_analytics_dashboard():
         st.markdown("### 🏷️ Entity Distribution")
         
         entities = insights['key_entities']
-        entity_counts = {k: len(v) for k, v in entities.items() if isinstance(v, list) and v}
+        
+        # Handle both old and new entity format
+        if 'entities' in entities:
+            entity_data = entities['entities']
+            entity_counts = {k: len(v) for k, v in entity_data.items() if isinstance(v, list) and v}
+        else:
+            # Fallback for old format
+            entity_counts = {k: len(v) for k, v in entities.items() if isinstance(v, list) and v and k != 'total_entities'}
         
         if entity_counts:
             fig = px.bar(
@@ -475,6 +529,8 @@ def display_analytics_dashboard():
                 color_continuous_scale="viridis"
             )
             st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No entities found for visualization")
 
 def display_advanced_search():
     """Display advanced search interface"""
@@ -492,18 +548,23 @@ def display_advanced_search():
     if search_query and st.button("🚀 Search", type="primary"):
         with st.spinner("Performing semantic search..."):
             try:
+                if not st.session_state.chatbot:
+                    st.error("Please upload and initialize a document first")
+                    return
+                
                 results = st.session_state.chatbot.perform_semantic_search(search_query, search_type)
                 
-                if 'error' not in results:
-                    st.success(f"Found {results['total_results']} relevant results")
+                if results and 'error' not in results:
+                    st.success(f"Found {results.get('total_results', 0)} relevant results")
                     
-                    for result in results['results'][:5]:  # Show top 5 results
-                        with st.expander(f"Result #{result['rank']} (Relevance: {result['relevance_score']:.2f})"):
-                            st.write(result['content'])
-                            if result['metadata']:
+                    for result in results.get('results', [])[:5]:  # Show top 5 results
+                        with st.expander(f"Result #{result.get('rank', 0)} (Relevance: {result.get('relevance_score', 0):.2f})"):
+                            st.write(result.get('content', 'No content available'))
+                            if result.get('metadata'):
                                 st.json(result['metadata'])
                 else:
-                    st.error(results['error'])
+                    error_msg = results.get('error', 'Unknown search error') if results else 'Search failed'
+                    st.error(f"Search error: {error_msg}")
             except Exception as e:
                 st.error(f"Search error: {str(e)}")
     
@@ -547,10 +608,23 @@ def display_document_insights():
     """Display comprehensive document insights"""
     
     if not st.session_state.document_insights:
-        st.info("📊 Run document analysis to see insights")
+        st.info("📊 Click 'Analyze Document' in the sidebar to see insights")
+        
+        if st.button("🔍 Analyze Document Now"):
+            with st.spinner("Performing advanced analysis..."):
+                if st.session_state.chatbot:
+                    st.session_state.document_insights = st.session_state.chatbot.get_document_insights()
+                    st.rerun()
+                else:
+                    st.error("Please upload and initialize a document first")
         return
     
     insights = st.session_state.document_insights
+    
+    # Handle error case
+    if "error" in insights:
+        st.error(f"Analysis error: {insights['error']}")
+        return
     
     # Document classification
     if 'document_classification' in insights:
@@ -567,6 +641,109 @@ def display_document_insights():
                 if classification.get('reasoning'):
                     st.write("**Reasoning:**")
                     st.write(classification['reasoning'])
+    
+    # Document Statistics
+    if 'basic_info' in insights:
+        stats = insights['basic_info']
+        if 'error' not in stats:
+            st.markdown("### 📊 Document Statistics")
+            
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Document Pages", stats.get('total_pages', 'Unknown'))
+            with col2:
+                st.metric("Total Characters", f"{stats.get('total_content_length', 0):,}")
+            with col3:
+                # Calculate estimated reading time (200 words per minute)
+                word_count = stats.get('total_content_length', 0) // 5  # Rough estimate
+                reading_time = max(1, word_count // 200)
+                st.metric("Est. Reading Time", f"{reading_time} min")
+            with col4:
+                st.metric("Word Count", f"{stats.get('total_content_length', 0) // 5:,}")  # Rough estimate
+    
+    # Reading Level Analysis
+    if 'complexity_analysis' in insights:
+        reading = insights['complexity_analysis']
+        if 'error' not in reading:
+            st.markdown("### 📚 Reading Level Analysis")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.info(f"**Reading Level:** {reading.get('complexity_level', 'Unknown')}")
+                st.info(f"**Grade Level:** {reading.get('flesch_kincaid_grade', 0)}")
+            with col2:
+                if reading.get('avg_sentence_length'):
+                    st.metric("Avg Sentence Length", f"{reading['avg_sentence_length']} words")
+                if reading.get('avg_word_length'):
+                    st.metric("Avg Word Length", f"{reading['avg_word_length']} chars")
+    
+    # Key Entities
+    if 'key_entities' in insights:
+        entities = insights['key_entities']
+        if 'error' not in entities:
+            st.markdown("### 🏷️ Key Entities Extracted")
+            
+            col1, col2 = st.columns([1, 3])
+            with col1:
+                st.metric("Total Entities", entities.get('total_entities', 0))
+            
+            with col2:
+                if entities.get('entities'):
+                    entity_data = entities['entities']
+                    
+                    # Display entities in tabs
+                    if any(entity_data.values()):
+                        entity_tabs = st.tabs(["👥 People", "🏢 Organizations", "📅 Dates", "🔢 Numbers"])
+                        
+                        with entity_tabs[0]:
+                            if entity_data.get('people'):
+                                for person in entity_data['people'][:5]:
+                                    st.write(f"• {person}")
+                            else:
+                                st.write("No people detected")
+                        
+                        with entity_tabs[1]:
+                            if entity_data.get('organizations'):
+                                for org in entity_data['organizations'][:5]:
+                                    st.write(f"• {org}")
+                            else:
+                                st.write("No organizations detected")
+                        
+                        with entity_tabs[2]:
+                            if entity_data.get('dates'):
+                                for date in entity_data['dates'][:5]:
+                                    st.write(f"• {date}")
+                            else:
+                                st.write("No dates detected")
+                        
+                        with entity_tabs[3]:
+                            if entity_data.get('numbers'):
+                                for num in entity_data['numbers'][:5]:
+                                    st.write(f"• {num}")
+                            else:
+                                st.write("No numbers detected")
+    
+    # Additional Analysis from Complexity Data
+    if 'complexity_analysis' in insights and 'error' not in insights['complexity_analysis']:
+        complexity = insights['complexity_analysis']
+        st.markdown("### 🔍 Additional Analysis")
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Words", complexity.get('total_words', 0))
+        with col2:
+            st.metric("Total Sentences", complexity.get('total_sentences', 0))
+        with col3:
+            st.metric("Flesch Score", f"{complexity.get('flesch_reading_ease', 0):.1f}")
+        
+        # Show additional metrics if available
+        if complexity.get('vocabulary_richness'):
+            st.markdown("#### Vocabulary Analysis")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Vocabulary Richness", f"{complexity.get('vocabulary_richness', 0):.3f}")
+            with col2:
+                st.metric("Reading Time", f"{complexity.get('estimated_reading_time', 0)} min")
     
     # Generate different summary types
     st.markdown("### 📝 AI-Generated Summaries")
@@ -602,25 +779,43 @@ def display_knowledge_graph():
     if st.button("🚀 Generate Knowledge Graph"):
         with st.spinner("Building knowledge graph..."):
             try:
+                if not st.session_state.chatbot:
+                    st.error("Please upload and initialize a document first")
+                    return
+                
                 graph_data = st.session_state.chatbot.generate_knowledge_graph()
                 
-                if 'error' not in graph_data:
+                if graph_data and 'error' not in graph_data:
                     # Display graph metrics
                     col1, col2, col3 = st.columns(3)
                     with col1:
-                        st.metric("Entities", graph_data.get('connected_entities', 0))
+                        st.metric("Entities", graph_data.get('total_entities', 0))
                     with col2:
                         st.metric("Relationships", graph_data.get('relationships', 0))
                     with col3:
-                        st.metric("Total Extracted", graph_data.get('total_entities', 0))
+                        st.metric("Connected Entities", graph_data.get('connected_entities', 0))
                     
                     # Create network visualization
                     if graph_data.get('nodes') and graph_data.get('edges'):
                         create_network_visualization(graph_data)
                     else:
                         st.info("No significant relationships found for visualization")
+                        
+                        # Show available entities even if no relationships
+                        if graph_data.get('nodes'):
+                            st.write("**Available Entities:**")
+                            entity_types = {}
+                            for node in graph_data['nodes']:
+                                entity_type = node.get('type', 'UNKNOWN')
+                                if entity_type not in entity_types:
+                                    entity_types[entity_type] = []
+                                entity_types[entity_type].append(node.get('label', node.get('id', 'Unknown')))
+                            
+                            for entity_type, entities in entity_types.items():
+                                st.write(f"**{entity_type.title()}:** {', '.join(entities[:10])}")
                 else:
-                    st.error(graph_data['error'])
+                    error_msg = graph_data.get('error', 'Unknown error') if graph_data else 'Knowledge graph generation failed'
+                    st.error(f"Error: {error_msg}")
             except Exception as e:
                 st.error(f"Error generating knowledge graph: {str(e)}")
 

@@ -65,6 +65,38 @@ for key, default in {
     if key not in st.session_state:
         st.session_state[key] = default
 
+def reset_quiz_state():
+    """Reset all quiz-related session state variables"""
+    keys_to_preserve = ['user_name', 'difficulty_mapping']
+    keys_to_reset = []
+    
+    for key in list(st.session_state.keys()):  # Convert to list to avoid runtime error
+        if key not in keys_to_preserve:
+            keys_to_reset.append(key)
+    
+    for key in keys_to_reset:
+        try:
+            del st.session_state[key]
+        except KeyError:
+            pass  # Key might have been deleted already
+    
+    # Clear Streamlit cache to avoid file storage issues
+    try:
+        st.cache_data.clear()
+        st.cache_resource.clear()
+    except:
+        pass  # Ignore if cache clearing fails
+    
+    # Reinitialize essential variables
+    st.session_state.quiz_started = False
+    st.session_state.qn = 0
+    st.session_state.score = 0
+    st.session_state.results = []
+    st.session_state.answered = False
+    st.session_state.question_cache = []
+    st.session_state.used_questions = []
+    st.session_state.show_explanations = True
+
 # LLM Initialization
 llm = ChatGroq(
     model="gemma2-9b-it",
@@ -135,7 +167,13 @@ quiz_mode = st.radio("Select Quiz Mode:",
                     index=0)
 
 if quiz_mode == "Upload CSV File":
-    st.session_state.uploaded_file = st.file_uploader("Upload Quiz CSV File", type=["csv"])
+    uploaded_file = st.file_uploader("Upload Quiz CSV File", type=["csv"])
+    if uploaded_file is not None:
+        st.session_state.uploaded_file = uploaded_file
+    else:
+        # Clear the uploaded file if none is selected
+        if 'uploaded_file' in st.session_state:
+            del st.session_state.uploaded_file
 
 # Quiz setup form
 with st.form("quiz_setup"):
@@ -171,7 +209,14 @@ if start:
 
     if st.session_state.quiz_mode == "csv":
         try:
-            df = pd.read_csv(st.session_state.uploaded_file)
+            # Read the file content directly to avoid media storage issues
+            uploaded_file = st.session_state.uploaded_file
+            
+            # Reset file pointer to beginning
+            uploaded_file.seek(0)
+            
+            # Read CSV content
+            df = pd.read_csv(uploaded_file)
             df.columns = df.columns.str.strip().str.lower()
             
             # Enhanced column detection with aliases
@@ -324,7 +369,17 @@ if start:
                 st.info(f"{remaining} unique questions remaining in the CSV for future quizzes")
         
         except Exception as e:
-            st.error(f"Error processing CSV: {str(e)}")
+            error_msg = str(e)
+            if "MediaFileStorageError" in error_msg or "Bad filename" in error_msg:
+                st.error("❌ File upload error. Please try uploading the CSV file again.")
+                st.info("💡 If the problem persists, try refreshing the page and uploading a different CSV file.")
+            else:
+                st.error(f"❌ Error processing CSV: {error_msg}")
+                st.info("💡 Please check that your CSV file has the correct format with columns like 'question', 'answer', 'a', 'b', 'c', 'd'.")
+            
+            # Clear the problematic file from session state
+            if 'uploaded_file' in st.session_state:
+                del st.session_state.uploaded_file
             st.stop()
     else:
         st.session_state.uploaded_df = None
@@ -625,16 +680,14 @@ elif st.session_state.qn == st.session_state.total_questions:
     
 
 
-    if st.button("Restart Quiz"):
-        # Preserve used questions to avoid repeats
-        used_qs = st.session_state.used_questions.copy()
-        
-        # Reset session state
-        for key in list(st.session_state.keys()):
-            if key not in ['user_name', 'difficulty_mapping', 'used_questions']:
-                del st.session_state[key]
-        
-        # Restore preserved values
-        st.session_state.used_questions = used_qs[-50:]  # Keep recent 50 to avoid repeats
-        st.session_state.quiz_started = False
-        st.rerun()
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("🔄 Start New Quiz", type="primary"):
+            reset_quiz_state()
+            st.rerun()
+    
+    with col2:
+        if st.button("🏠 Back to Home"):
+            reset_quiz_state()
+            st.rerun()

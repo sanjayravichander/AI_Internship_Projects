@@ -295,54 +295,56 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# ---------------------- Cached Model Loading ----------------------
+@st.cache_resource
+def load_sentiment_model():
+    """Load sentiment analysis model with Streamlit caching to avoid re-downloading"""
+    try:
+        # Try to load fine-tuned model first
+        model_path = Path(__file__).parent / "finetune" / "files" / "backend" / "model"
+        
+        if model_path.exists() and any(model_path.iterdir()):
+            st.info("🔄 Loading fine-tuned model...")
+            model = AutoModelForSequenceClassification.from_pretrained(str(model_path))
+            tokenizer = AutoTokenizer.from_pretrained(str(model_path))
+            sentiment_pipeline = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
+            model_info = {
+                "type": "Fine-tuned Model",
+                "path": str(model_path),
+                "status": "loaded"
+            }
+            st.success("✅ Fine-tuned model loaded successfully!")
+        else:
+            # Fallback to pre-trained model
+            st.info("🔄 Loading pre-trained model...")
+            default_model = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+            # Force PyTorch backend to avoid TensorFlow issues
+            model = AutoModelForSequenceClassification.from_pretrained(default_model)
+            tokenizer = AutoTokenizer.from_pretrained(default_model)
+            sentiment_pipeline = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer, framework="pt")
+            model_info = {
+                "type": "Pre-trained Model",
+                "model": default_model,
+                "status": "loaded"
+            }
+            st.success("✅ Pre-trained model loaded successfully!")
+            
+        return sentiment_pipeline, model_info
+        
+    except Exception as e:
+        st.error(f"❌ Error loading model: {str(e)}")
+        model_info = {
+            "type": "Error",
+            "error": str(e),
+            "status": "failed"
+        }
+        raise e
+
 class SentimentAnalyzer:
     """Advanced sentiment analysis with model management"""
     
     def __init__(self):
-        self.pipeline = None
-        self.model_info = {}
-        self.load_model()
-    
-    def load_model(self):
-        """Load sentiment analysis model with fallback options"""
-        try:
-            # Try to load fine-tuned model first
-            model_path = Path(__file__).parent / "finetune" / "files" / "backend" / "model"
-            
-            if model_path.exists() and any(model_path.iterdir()):
-                st.info("🔄 Loading fine-tuned model...")
-                model = AutoModelForSequenceClassification.from_pretrained(str(model_path))
-                tokenizer = AutoTokenizer.from_pretrained(str(model_path))
-                self.pipeline = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
-                self.model_info = {
-                    "type": "Fine-tuned Model",
-                    "path": str(model_path),
-                    "status": "loaded"
-                }
-                st.success("✅ Fine-tuned model loaded successfully!")
-            else:
-                # Fallback to pre-trained model
-                st.info("🔄 Loading pre-trained model...")
-                default_model = "cardiffnlp/twitter-roberta-base-sentiment-latest"
-                # Force PyTorch backend to avoid TensorFlow issues
-                model = AutoModelForSequenceClassification.from_pretrained(default_model)
-                tokenizer = AutoTokenizer.from_pretrained(default_model)
-                self.pipeline = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer, framework="pt")
-                self.model_info = {
-                    "type": "Pre-trained Model",
-                    "model": default_model,
-                    "status": "loaded"
-                }
-                st.success("✅ Pre-trained model loaded successfully!")
-                
-        except Exception as e:
-            st.error(f"❌ Error loading model: {str(e)}")
-            self.model_info = {
-                "type": "Error",
-                "error": str(e),
-                "status": "failed"
-            }
-            raise e
+        self.pipeline, self.model_info = load_sentiment_model()
     
     def analyze_sentiment(self, text):
         """Analyze sentiment of input text"""
